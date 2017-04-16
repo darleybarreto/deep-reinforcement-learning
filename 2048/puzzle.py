@@ -1,5 +1,6 @@
 from tkinter import *
 from logic import *
+import os 
 
 SIZE = 500
 GRID_LEN = 4
@@ -31,7 +32,7 @@ class Player(object):
 
     def update_state(self, env, score):
         self.__score = score
-        print(env)
+        # print(env)
 
 class GameGrid(Frame):
     def __init__(self, player):
@@ -96,6 +97,7 @@ class GameGrid(Frame):
                 if new_number == 0:
                     self.grid_cells[i][j].configure(text="", bg=BACKGROUND_COLOR_CELL_EMPTY)
                 else:
+
                     self.grid_cells[i][j].configure(text=str(new_number), bg=BACKGROUND_COLOR_DICT[new_number], fg=CELL_COLOR_DICT[new_number])
         self.update_idletasks()
     
@@ -109,7 +111,7 @@ class GameGrid(Frame):
 
     def _score(self):
 
-        self.score +=  np.sum(self.matrix[np.where( self.matrix > 2)])
+        self.score +=  int(np.sum(self.matrix[np.where( self.matrix > 2)]))
 
     def key_down(self, event):
         key = repr(event.keysym)

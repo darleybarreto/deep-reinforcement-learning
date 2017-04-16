@@ -17,7 +17,7 @@ import numpy as np
 # 1 mark for creating the correct matrix
 
 def new_game(n):
-    matrix = np.zeros((n,n), dtype=np.int8)
+    matrix = np.zeros((n,n), dtype=np.uint64)
 
     return matrix
 
@@ -52,24 +52,33 @@ def add_two(mat):
 # 3 marks for correct checking
 
 def game_state(mat):
-    if np.any(mat[np.where( mat == 2048)]):
-        return 'Win!'
+
+    # if np.any(mat[np.where( mat == 2048)]):
+    #     return 'Win!'
+
+    for i in range(len(mat)):
+        for j in range(len(mat[0])):
+            if mat[i][j]==2048:
+                return 'Win!'
+
+    for i in range(len(mat)): #check for any zero entries
+        for j in range(len(mat[0])):
+            if mat[i][j]==0:
+                return ''
 
     for i in range(len(mat)-1): #intentionally reduced to check the row on the right and below
         for j in range(len(mat[0])-1): #more elegant to use exceptions but most likely this will be their solution
             if mat[i][j]==mat[i+1][j] or mat[i][j+1]==mat[i][j]:
                 return ''
-    for i in range(len(mat)): #check for any zero entries
-        for j in range(len(mat[0])):
-            if mat[i][j]==0:
-                return ''
+
     for k in range(len(mat)-1): #to check the left/right entries on the last row
         if mat[len(mat)-1][k]==mat[len(mat)-1][k+1]:
             return ''
+            
     for j in range(len(mat)-1): #check up/down entries on last column
         if mat[j][len(mat)-1]==mat[j+1][len(mat)-1]:
             return ''
-    
+
     return 'Lose!'
 
 ###########
@@ -123,7 +132,7 @@ def game_state(mat):
 # Check the down one. Reverse/transpose if ordered wrongly will give you wrong result.
 
 def cover_up(mat):
-    new=np.zeros(mat.shape, dtype=np.int8)
+    new=np.zeros(mat.shape, dtype=np.uint64)
     done=False
     for i in range(4):
         count=0

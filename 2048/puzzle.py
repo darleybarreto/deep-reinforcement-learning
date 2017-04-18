@@ -1,6 +1,7 @@
 from tkinter import *
 from logic import *
-import os 
+import os
+import pyautogui
 
 SIZE = 500
 GRID_LEN = 4
@@ -27,12 +28,22 @@ KEY_LEFT = "'Left'"
 KEY_RIGHT = "'Right'"
 
 class Player(object):
-    def __init__(self):
-        self.__score = 0
+    
+    ACTION = pyautogui.press
 
-    def update_state(self, env, score):
-        self.__score = score
-        # print(env)
+    def __init__(self, actions=1000):
+        self.__score = 0
+        self.max_reward = 0
+        self.actions = actions
+
+    def make_action(self):
+        pass
+        # Player.ACTION('left')
+
+    def update_state(self, env, reward):
+        # self.__score = score
+        # self.make_action()
+        print(env)
 
 class GameGrid(Frame):
     def __init__(self, player):
@@ -62,7 +73,7 @@ class GameGrid(Frame):
         self.init_grid()
         self.init_matrix()
         self.update_grid_cells()
-        
+        self.update_and_notify()
         self.mainloop()
 
     def init_grid(self):
@@ -103,7 +114,22 @@ class GameGrid(Frame):
     
     def update_and_notify(self):
         self.n_score_label['text'] = str(self.score)
-        self.player.update_state(self.matrix,self.score)
+
+        existent_rewards = self.matrix[np.where(self.matrix > 2)]
+        
+        if existent_rewards:
+            max_value = np.amax(existent_rewards)
+
+            if max_value == self.player.max_reward:
+                actual_reward = 0
+            
+            else:
+                actual_reward = max_value
+        
+        else:
+            actual_reward = 0
+
+        self.player.update_state(self.matrix,actual_reward)
 
     def finish(self, result):
         pass
@@ -138,5 +164,5 @@ class GameGrid(Frame):
 
 
 
-p = Player()
+p = Player(actions=100)
 gamegrid = GameGrid(p)

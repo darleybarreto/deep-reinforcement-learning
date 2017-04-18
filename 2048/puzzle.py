@@ -32,24 +32,33 @@ class Player(object):
     ACTION = pyautogui.press
 
     def __init__(self, actions=1000):
-        self.__score = 0
-        self.max_reward = 0
+        self._compute_score = 0
         self.actions = actions
 
     def make_action(self):
         pass
         # Player.ACTION('left')
 
-    def update_state(self, env, reward):
-        # self.__score = score
+    def update_state(self, env, reward, terminal_state):
+        # self._compute_score = score
         # self.make_action()
+        if terminal_state:
+            if terminal_state = "Win!":
+                pass
+
+            else:
+                pass
+
         print(env)
 
 class GameGrid(Frame):
-    def __init__(self, player):
+    def __init__(self, player=None):
         Frame.__init__(self)
+        self._end_game = False
         self.player = player
         self.score = 0
+        self.max_given_reward = 0
+
         self.grid()
         self.master.title('2048')
         self.master.bind("<Key>", self.key_down)
@@ -60,8 +69,8 @@ class GameGrid(Frame):
         score_label = Label(master=self.backround,bg=BACKGROUND_COLOR_GAME, text="Score:", font=FONTHEADER, width=6, height=1)
         score_label.grid()
 
-        self.n_score_label = Label(master=self.backround,bg=BACKGROUND_COLOR_GAME, text=str(self.score), font=FONTHEADER, width=6, height=1)
-        self.n_score_label.grid()
+        self.ncompute_score_label = Label(master=self.backround,bg=BACKGROUND_COLOR_GAME, text=str(self.score), font=FONTHEADER, width=6, height=1)
+        self.ncompute_score_label.grid()
         
         
 
@@ -73,7 +82,9 @@ class GameGrid(Frame):
         self.init_grid()
         self.init_matrix()
         self.update_grid_cells()
+
         self.update_and_notify()
+
         self.mainloop()
 
     def init_grid(self):
@@ -85,7 +96,6 @@ class GameGrid(Frame):
             for j in range(GRID_LEN):
                 cell = Frame(table, bg=BACKGROUND_COLOR_CELL_EMPTY, width=SIZE/GRID_LEN, height=SIZE/GRID_LEN)
                 cell.grid(row=i, column=j, padx=GRID_PADDING, pady=GRID_PADDING)
-                # font = Font(size=FONT_SIZE, family=FONT_FAMILY, weight=FONT_WEIGHT)
                 t = Label(master=cell, text="", bg=BACKGROUND_COLOR_CELL_EMPTY, justify=CENTER, font=FONTGRID, width=4, height=2)
                 t.grid()
                 grid_row.append(t)
@@ -113,29 +123,30 @@ class GameGrid(Frame):
         self.update_idletasks()
     
     def update_and_notify(self):
-        self.n_score_label['text'] = str(self.score)
+        self.ncompute_score_label['text'] = str(self.score)
+        if not self._end_game:
+            if self.player:
+                existent_rewards = self.matrix[np.where(self.matrix > 2)]
+                
+                if np.any(existent_rewards):
+                    max_value = np.amax(existent_rewards)
 
-        existent_rewards = self.matrix[np.where(self.matrix > 2)]
-        
-        if existent_rewards:
-            max_value = np.amax(existent_rewards)
+                    if max_value == self.max_given_reward:
+                        actual_reward = 0
+                    
+                    else:
+                        actual_reward = max_value
+                        self.max_given_reward = actual_reward
+                
+                else:
+                    actual_reward = 0
 
-            if max_value == self.player.max_reward:
-                actual_reward = 0
-            
-            else:
-                actual_reward = max_value
-        
-        else:
-            actual_reward = 0
-
-        self.player.update_state(self.matrix,actual_reward)
+        self.player.update_state(self.matrix,actual_reward,self._end_game)
 
     def finish(self, result):
-        pass
-        # self.player.update_state(result)
+        self._end_game = result
 
-    def _score(self):
+    def compute_score(self):
 
         self.score +=  int(np.sum(self.matrix[np.where( self.matrix > 2)]))
 
@@ -143,7 +154,7 @@ class GameGrid(Frame):
         key = repr(event.keysym)
         if key in self.commands:
             self.matrix,done = self.commands[repr(event.keysym)](self.matrix)
-            self._score()
+            self.compute_score()
             if done:
                 self.matrix = add_two(self.matrix)
                 self.update_grid_cells()
@@ -156,12 +167,6 @@ class GameGrid(Frame):
 
                     self.finish(result)
                 self.update_and_notify()
-    # def generate_next(self):
-    #     index = (self.gen(), self.gen())
-    #     while self.matrix[index[0]][index[1]] != 0:
-    #         index = (self.gen(), self.gen())
-    #     self.matrix[index[0]][index[1]] = 2
-
 
 
 p = Player(actions=100)

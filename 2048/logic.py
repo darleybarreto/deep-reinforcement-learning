@@ -5,12 +5,11 @@
 #
 # Note that written answers are commented out to allow us to run your
 # code easily while grading your problem set.
-from random import randint
-import numpy as np
 #######
 #Task 1a#
 #######
-
+import numpy as np
+from random import randint
 # [Marking Scheme]
 # Points to note:
 # Matrix elements must be equal but not identical

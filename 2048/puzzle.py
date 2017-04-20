@@ -31,9 +31,24 @@ class Player(object):
     
     ACTION = pyautogui.press
 
-    def __init__(self, actions=1000):
+    def __init__(self, alg='Q', Q_matrix=None, actions=1000, limit=False, **kwargs):
         self._compute_score = 0
         self.actions = actions
+        self.limit = limit
+        self.Q_matrix = Q_matrix
+        self.alpha = kwargs.get('alpha', default=0.5)
+        self.gamma = kwargs.get('gamma', default=1.)
+
+        self.vfunction = ValueFunctionFactory(self.Q_matrix,\
+            shape_Q=kwargs.get('shape_Q', default=False),\
+            alpha=self.alpha,\
+            gamma=self.gamma,\
+        ).createFunction(alg)(
+            mode = kwargs.get('mode', default=None),\
+            epsilon = kwargs.get('epsilon', default=None),\
+            ef = kwargs.get('ef', default=None)
+            )
+
 
     def make_action(self):
         pass
@@ -42,21 +57,35 @@ class Player(object):
     def update_state(self, env, reward, terminal_state):
         # self._compute_score = score
         # self.make_action()
-        if terminal_state:
-            if terminal_state = "Win!":
-                pass
+        # if terminal_state:
+        #     if terminal_state = "Win!":
+        #         pass
 
-            else:
-                pass
+        #     else:
+        #         pass
 
         print(env)
+
+    def save_date(self, file_name):
+        logging = {
+            'player_actions_number':self.actions,
+            'player_limited_actions':self.limit,
+            'value_function': self.vfunction.__name__,
+            'Q_matrix': self.Q_matrix,
+            'is_epsilon': bool(self.epsilon)
+        }
+
+        np.save(file_name, logging)
+
 
 class GameGrid(Frame):
     def __init__(self, player=None):
         Frame.__init__(self)
         self._end_game = False
+        self.game_number = 0
         self.player = player
         self.score = 0
+        self.actual_reward = 0
         self.max_given_reward = 0
 
         self.grid()
@@ -84,8 +113,6 @@ class GameGrid(Frame):
         self.update_grid_cells()
 
         self.update_and_notify()
-
-        self.mainloop()
 
     def init_grid(self):
 
@@ -126,35 +153,29 @@ class GameGrid(Frame):
         self.ncompute_score_label['text'] = str(self.score)
         if not self._end_game:
             if self.player:
-                existent_rewards = self.matrix[np.where(self.matrix > 2)]
-                
-                if np.any(existent_rewards):
-                    max_value = np.amax(existent_rewards)
-
-                    if max_value == self.max_given_reward:
-                        actual_reward = 0
-                    
-                    else:
-                        actual_reward = max_value
-                        self.max_given_reward = actual_reward
-                
-                else:
-                    actual_reward = 0
+                self.actual_reward = self.score - self.actual_reward
 
         self.player.update_state(self.matrix,actual_reward,self._end_game)
 
     def finish(self, result):
         self._end_game = result
 
-    def compute_score(self):
+        self.quit()
 
-        self.score +=  int(np.sum(self.matrix[np.where( self.matrix > 2)]))
+    def start_game(self):
+        self.game_number += 1
+        self.mainloop()
+
+    def compute_score(self, before_state):
+        self.matrix[np.where( self.matrix != before_state)]
+        # self.score +=  int(np.sum(self.matrix[np.where( self.matrix > 2)]))
 
     def key_down(self, event):
         key = repr(event.keysym)
         if key in self.commands:
-            self.matrix,done = self.commands[repr(event.keysym)](self.matrix)
-            self.compute_score()
+            before_state = self.matrix
+            self.matrix, done = self.commands[repr(event.keysym)](self.matrix)
+            # self.compute_score(before_state)
             if done:
                 self.matrix = add_two(self.matrix)
                 self.update_grid_cells()
@@ -168,6 +189,5 @@ class GameGrid(Frame):
                     self.finish(result)
                 self.update_and_notify()
 
-
-p = Player(actions=100)
-gamegrid = GameGrid(p)
+    def save_data(self, file_name):
+        self.player.save_data(file_name)

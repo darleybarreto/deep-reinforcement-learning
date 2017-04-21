@@ -1,4 +1,4 @@
-# Some reinforcement learning algorithms implementation
+# Some reinforcement learning algorithms implementations
 These algorithms are most assignments for the Deep Reinforcement Learning course at Universidade Federal do Ceara. (see the course page here: http://wikiufc.gelsol.org/courses/509/wiki/426)
 
 ## Content

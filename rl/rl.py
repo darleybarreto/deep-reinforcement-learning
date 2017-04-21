@@ -190,7 +190,7 @@ class Player2048(Player):
 			# print("ação: " + str(action))
 			# print("recompensa " + str(reward))
 			if reward == max_reward:
-				if action_to_do:
+				if isinstance(action_to_do, int):
 					if random() < 0.5:
 						action_to_do = action
 				

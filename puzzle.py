@@ -1,7 +1,5 @@
 from tkinter import *
 from logic import *
-from rl.rl import Player
-import os
 
 SIZE = 500
 GRID_LEN = 4
@@ -43,12 +41,9 @@ class PlayerGameInterface(object):
         if resource:
             result = resource.get(query, None)(actual_state)
             return result
-        
 
     def update_state(self, next_state, reward):
-        print("antes do update")
         self.player.update(next_state, reward)
-        print("update realizado")
         self.player.make_action()
 
     def compute_info(self):
@@ -60,7 +55,7 @@ class PlayerGameInterface(object):
 
 
 class GameGrid2048(Frame):
-    def __init__(self, interface):
+    def __init__(self, interface=None):
         Frame.__init__(self)
         self.wins = 0
         self.loss = 0
@@ -143,7 +138,7 @@ class GameGrid2048(Frame):
     def update_and_notify(self):
         self.ncompute_score_label['text'] = str(self.score)
 
-        if self.interface.is_conected():
+        if self.interface and self.interface.is_conected():
             self.actual_reward = self.score - self.actual_reward
             self.interface.update_state(self.matrix, self.actual_reward)
 
@@ -176,7 +171,7 @@ class GameGrid2048(Frame):
                     self.grid_cells[1][1].configure(text="You",bg=BACKGROUND_COLOR_CELL_EMPTY)
                     self.grid_cells[1][2].configure(text=result,bg=BACKGROUND_COLOR_CELL_EMPTY)
                     self.finish(result)
-                self.update_and_notify()
+            self.update_and_notify()
 
     def save_data(self, file_name=None):
         if self.interface.is_conected():
@@ -193,5 +188,5 @@ class GameGrid2048(Frame):
         self.quit()
 
     def __attach_interface(self, interface):
-        interface.connect_game(self)
+        if interface: interface.connect_game(self)
         self.interface = interface

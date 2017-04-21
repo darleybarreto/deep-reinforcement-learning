@@ -1,5 +1,5 @@
 import numpy as np
-from random import random
+from random import random, randint
 import pyautogui
 import time
 
@@ -33,6 +33,28 @@ def ValueFunctionFactory(**kwargs):
 
 
 	def __Q(actual_state, next_state, action, reward, **lwargs):
+		'''
+		Q-Learning function
+
+		Readings:
+			http://artint.info/html/ArtInt_265.html
+			http://www.cse.unsw.edu.au/~cs9417ml/RL1/algorithms.html
+
+		Simple Q-Learning: 
+			Q(s, a) = (1 - alpha)*Q(s,a) + alpha(R(s, a s') + gamma*max[a'](Q(s', a'))
+
+		Epsilon-greedy Q-Learning:
+			For a small given probability epsilon, dont use max[a']
+			Q(s, a) = (1 - alpha)*Q(s,a) + alpha(R(s, a s') + gamma*any[a'](Q(s', a'))
+
+		Exploratory Q-Learning:
+			Let fe(u,n) = u + k/n, and
+			u = max[a'](Q(s',a'))
+			n = max number of choosing u state
+			k = any given constant
+
+			Q(s, a) = (1 - alpha)*Q(s,a) + alpha(R(s, a s') + gamma*fe(u,n))
+		'''
 
 		mode = lwargs.get('mode', None)
 		epsilon = lwargs.get('epsilon', 0.001)
@@ -56,13 +78,15 @@ def ValueFunctionFactory(**kwargs):
 
 
 		elif mode == 'ef':
-			# exploration function
+			# exploratory function
 			pass
 
 		else:
 			raise Exception("No mode for Q-Learning named %s found")%(mode)
 
 	def __SARSA():
+		'''
+		'''
 		pass
 
 	def createFunction(alg):
@@ -163,9 +187,15 @@ class Player2048(Player):
 			next_state, is_done, reward = self.interface.ask_game('commands',\
 											Player2048.mapping[action],\
 											actual_state)
-
+			# print("ação: " + str(action))
+			# print("recompensa " + str(reward))
 			if reward == max_reward:
-				action_to_do = action
+				if action_to_do:
+					if random() < 0.5:
+						action_to_do = action
+				
+				else:
+					action_to_do = randint(0,3)
 
 			elif reward > max_reward:
 				action_to_do = action
@@ -175,20 +205,18 @@ class Player2048(Player):
 
 	def make_action(self):
 		time.sleep(2)
-		print("before decision making")
 		action_to_do, reward = self.ask_max_reward(self.actual_state)
 		self.present_action = action_to_do
 		self.present_reward = reward
-		print(self.present_action)
+		print("Choice: " + Player2048.mapping[self.present_action])
 		self.action_function(action_to_do)
-		print("after decision making")
 
 	def update(self, next_state, reward):
 		if self.actual_state is None:
 			self.actual_state = next_state
 		else:
 			past = self.compute_state(self.actual_state)
-			self.actual_state = self.actual_state
+			self.actual_state = next_state
 			now = self.compute_state(self.actual_state)
 
 			self.vfunction(past, now, self.present_action, reward, **self.vfunction_args)

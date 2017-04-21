@@ -1,7 +1,7 @@
 from tkinter import *
 from logic import *
+from rl.rl import Player
 import os
-import pyautogui
 
 SIZE = 500
 GRID_LEN = 4
@@ -25,88 +25,79 @@ KEY_RIGHT_ALT = "\'\\uf703\'"
 KEY_UP = "'Up'"
 KEY_DOWN = "'Down'"
 KEY_LEFT = "'Left'"
-KEY_RIGHT = "'Right'"
+KEY_RIGHT = "'Right'"     
 
-class Player(object):
-    
-    ACTION = pyautogui.press
+class PlayerGameInterface(object):
+    def __init__(self):
+        self.player = None
+        self.game = None
 
-    def __init__(self, alg='Q', Q_matrix=None, actions=1000, limit=False, **kwargs):
-        self._compute_score = 0
-        self.actions = actions
-        self.limit = limit
-        self.Q_matrix = Q_matrix
-        self.alpha = kwargs.get('alpha', default=0.5)
-        self.gamma = kwargs.get('gamma', default=1.)
-
-        self.vfunction = ValueFunctionFactory(self.Q_matrix,\
-            shape_Q=kwargs.get('shape_Q', default=False),\
-            alpha=self.alpha,\
-            gamma=self.gamma,\
-        ).createFunction(alg)(
-            mode = kwargs.get('mode', default=None),\
-            epsilon = kwargs.get('epsilon', default=None),\
-            ef = kwargs.get('ef', default=None)
-            )
-
-
-    def make_action(self):
-        pass
-        # Player.ACTION('left')
-
-    def update_state(self, env, reward, terminal_state):
-        # self._compute_score = score
-        # self.make_action()
-        # if terminal_state:
-        #     if terminal_state = "Win!":
-        #         pass
-
-        #     else:
-        #         pass
-
-        print(env)
-
-    def save_date(self, file_name):
-        logging = {
-            'player_actions_number':self.actions,
-            'player_limited_actions':self.limit,
-            'value_function': self.vfunction.__name__,
-            'Q_matrix': self.Q_matrix,
-            'is_epsilon': bool(self.epsilon)
-        }
-
-        np.save(file_name, logging)
-
-
-class GameGrid(Frame):
-    def __init__(self, player=None):
-        Frame.__init__(self)
-        self._end_game = False
-        self.game_number = 0
+    def connect_player(self, player):
         self.player = player
+
+    def connect_game(self, game):
+        self.game = game
+
+    def ask_game(self, resource, query, actual_state):
+        resource  = self.game.__dict__.get(resource, None)
+        if resource:
+            result = resource.get(query, None)(actual_state)
+            return result
+        
+
+    def update_state(self, next_state, reward):
+        print("antes do update")
+        self.player.update(next_state, reward)
+        print("update realizado")
+        self.player.make_action()
+
+    def compute_info(self):
+        return self.player.compute_info()
+
+    def is_conected(self):
+        return self.player and self.game
+
+
+
+class GameGrid2048(Frame):
+    def __init__(self, interface):
+        Frame.__init__(self)
+        self.wins = 0
+        self.loss = 0
+        self.game_number = 0
         self.score = 0
         self.actual_reward = 0
-        self.max_given_reward = 0
+        self.interface = None
 
         self.grid()
         self.master.title('2048')
         self.master.bind("<Key>", self.key_down)
+        self.master.bind('<Control-c>', self.keyinterrupt)
 
-        self.backround = Frame(self, bg=BACKGROUND_COLOR_GAME, width=SIZE, height=SIZE)
-        self.backround.grid()
+        self.background = None
+        self.ncompute_score_label = 0
 
-        score_label = Label(master=self.backround,bg=BACKGROUND_COLOR_GAME, text="Score:", font=FONTHEADER, width=6, height=1)
-        score_label.grid()
-
-        self.ncompute_score_label = Label(master=self.backround,bg=BACKGROUND_COLOR_GAME, text=str(self.score), font=FONTHEADER, width=6, height=1)
-        self.ncompute_score_label.grid()
-        
-        
-
-        #self.gamelogic = gamelogic
         self.commands = {   KEY_UP: up, KEY_DOWN: down, KEY_LEFT: left, KEY_RIGHT: right,
                             KEY_UP_ALT: up, KEY_DOWN_ALT: down, KEY_LEFT_ALT: left, KEY_RIGHT_ALT: right }
+        self.__attach_interface(interface)
+        self.new_game()
 
+    def new_game(self):
+        if self.background:
+            self.background.grid_forget()
+            self.background.destroy()
+
+        self.background = Frame(self, bg=BACKGROUND_COLOR_GAME, width=SIZE, height=SIZE)
+        self.background.grid()
+
+        score_label = Label(master=self.background,bg=BACKGROUND_COLOR_GAME, text="Score:", font=FONTHEADER, width=6, height=1)
+        score_label.grid()
+
+        self.ncompute_score_label = Label(master=self.background,bg=BACKGROUND_COLOR_GAME, text=str(self.score), font=FONTHEADER, width=6, height=1)
+        self.ncompute_score_label.grid()
+
+        self.score = 0
+        self.ncompute_score_label['text'] = str(self.score)
         self.grid_cells = []
         self.init_grid()
         self.init_matrix()
@@ -116,7 +107,7 @@ class GameGrid(Frame):
 
     def init_grid(self):
 
-        table = Frame(self.backround, bg=BACKGROUND_COLOR_GAME, width=SIZE, height=SIZE)
+        table = Frame(self.background, bg=BACKGROUND_COLOR_GAME, width=SIZE, height=SIZE)
         table.grid()
         for i in range(GRID_LEN):
             grid_row = []
@@ -151,43 +142,56 @@ class GameGrid(Frame):
     
     def update_and_notify(self):
         self.ncompute_score_label['text'] = str(self.score)
-        if not self._end_game:
-            if self.player:
-                self.actual_reward = self.score - self.actual_reward
 
-        self.player.update_state(self.matrix,actual_reward,self._end_game)
+        if self.interface.is_conected():
+            self.actual_reward = self.score - self.actual_reward
+            self.interface.update_state(self.matrix, self.actual_reward)
 
     def finish(self, result):
-        self._end_game = result
+        self.game_number += 1
 
-        self.quit()
+        if result == "Win!": self.wins += 1
+        elif result == "Lose!": self.loss += 1
+
+        self.new_game()
 
     def start_game(self):
-        self.game_number += 1
         self.mainloop()
 
-    def compute_score(self, before_state):
-        self.matrix[np.where( self.matrix != before_state)]
-        # self.score +=  int(np.sum(self.matrix[np.where( self.matrix > 2)]))
+    def compute_score(self, score_earned):
+        self.score +=  score_earned
+
 
     def key_down(self, event):
         key = repr(event.keysym)
         if key in self.commands:
-            before_state = self.matrix
-            self.matrix, done = self.commands[repr(event.keysym)](self.matrix)
-            # self.compute_score(before_state)
+            self.matrix, done, score_earned = self.commands[repr(event.keysym)](self.matrix)
+            self.compute_score(score_earned)
             if done:
                 self.matrix = add_two(self.matrix)
                 self.update_grid_cells()
                 done=False
-
                 result = game_state(self.matrix)
                 if result:
                     self.grid_cells[1][1].configure(text="You",bg=BACKGROUND_COLOR_CELL_EMPTY)
                     self.grid_cells[1][2].configure(text=result,bg=BACKGROUND_COLOR_CELL_EMPTY)
-
                     self.finish(result)
                 self.update_and_notify()
 
-    def save_data(self, file_name):
-        self.player.save_data(file_name)
+    def save_data(self, file_name=None):
+        if self.interface.is_conected():
+            data_player = self.interface.compute_info()
+            data_player.update({'game_number': self.game_number,\
+                'wins': self.wins,\
+                'loss': self.loss
+                })
+            if not file_name: file_name = data_player['player_name']
+            np.save(file_name, data_player)
+
+    def keyinterrupt(self, event):
+        self.save_data()
+        self.quit()
+
+    def __attach_interface(self, interface):
+        interface.connect_game(self)
+        self.interface = interface

@@ -1,5 +1,8 @@
 from tkinter import *
-from logic import *
+from tfe_logic import *
+from rl.rl import Player
+from random import random, randint
+import time
 
 SIZE = 500
 GRID_LEN = 4
@@ -23,35 +26,79 @@ KEY_RIGHT_ALT = "\'\\uf703\'"
 KEY_UP = "'Up'"
 KEY_DOWN = "'Down'"
 KEY_LEFT = "'Left'"
-KEY_RIGHT = "'Right'"     
+KEY_RIGHT = "'Right'"
 
-class PlayerGameInterface(object):
-    def __init__(self):
-        self.player = None
-        self.game = None
 
-    def connect_player(self, player):
-        self.player = player
+class Player2048(Player):
 
-    def connect_game(self, game):
-        self.game = game
+    mapping = {0:"'Up'",\
+            1:"'Down'",\
+            2:"'Left'",\
+            3:"'Right'"
+        }
 
-    def ask_game(self, resource, query, actual_state):
-        resource  = self.game.__dict__.get(resource, None)
-        if resource:
-            result = resource.get(query, None)(actual_state)
-            return result
+    def __init__(self, name, **kwargs):
+        super(Player2048, self).__init__(name, **kwargs)
+        self.current_state = None
+        self.current_action = None
 
-    def update_state(self, next_state, reward):
-        self.player.update(next_state, reward)
-        self.player.make_action()
+    def ask_max_reward(self, current_state):
+        '''
+        Ask for the reward
+        '''
+        action_to_do = None
+        max_reward = 0
+
+        for action in [0, 1, 2, 3]:
+            next_state, is_done, reward = self.interface.ask_game('commands',\
+                                            Player2048.mapping[action],\
+                                            current_state)
+            if reward == max_reward:
+                if isinstance(action_to_do, int):
+                    if random() < 0.5:
+                        action_to_do = action
+                
+                else:
+                    action_to_do = randint(0,3)
+
+            elif reward > max_reward:
+                action_to_do = action
+                max_reward = reward
+
+        return action_to_do, max_reward
+
+    def make_action(self):
+        time.sleep(2)
+        if self.alg == "Q":
+            action_to_do, reward = self.ask_max_reward(self.current_state)
+        
+        elif self.alg == "SARSA":
+            pass
+
+        self.current_action = action_to_do
+        self.present_reward = reward
+        print("Choice: " + Player2048.mapping[self.current_action])
+        self.action_function(action_to_do)
+
+    def update(self, next_state, reward):
+        if self.current_state is None:
+            self.current_state = next_state
+        else:
+
+            past = self.compute_state(self.current_state)
+            self.current_state = next_state
+            now = self.compute_state(self.current_state)
+
+            self.vfunction(past, now, self.current_action, reward, **self.vfunction_args)
 
     def compute_info(self):
-        return self.player.compute_info()
-
-    def is_conected(self):
-        return self.player and self.game
-
+        return {
+            'player_actions_number':self.actions,
+            'player_limited_actions':self.limit,
+            'value_function': self.vfunction.__name__,
+            'Q_matrix': self.Q_matrix,
+            'player_name': self.player_name
+        }     
 
 
 class GameGrid2048(Frame):

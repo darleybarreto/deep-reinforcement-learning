@@ -42,7 +42,7 @@ class Player2048(Player):
         self.current_state = None
         self.current_action = None
 
-    def ask_max_reward(self, current_state):
+    def ask_Q_action(self, current_state):
         '''
         Ask for the reward
         '''
@@ -67,17 +67,21 @@ class Player2048(Player):
 
         return action_to_do, max_reward
 
+    def ask_SARSA_action(self, current_state):
+        pass
+
     def make_action(self):
         time.sleep(2)
         if self.alg == "Q":
-            action_to_do, reward = self.ask_max_reward(self.current_state)
+            action_to_do, reward = self.ask_Q_action(self.current_state)
         
         elif self.alg == "SARSA":
-            pass
+            action_to_do, reward = self.ask_SARSA_action(self.current_state)
 
         self.current_action = action_to_do
         self.present_reward = reward
-        print("Choice: " + Player2048.mapping[self.current_action])
+
+        print("[Choice %s algorithm]: " + Player2048.mapping[self.current_action])%(self.alg)
         self.action_function(action_to_do)
 
     def update(self, next_state, reward):

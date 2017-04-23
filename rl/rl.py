@@ -67,12 +67,9 @@ def ValueFunctionFactory(**kwargs):
 			Q(s, a) = (1 - alpha)*Q(s,a) + alpha(R(s, a s') + gamma*fe(u,n))
 		'''
 
-		mode = lwargs.get('mode', 'SARSA')
+		mode = lwargs.get('mode', 'simple')
 
 		if not mode== 'ef':
-
-			if mode == "SARSA":
-				sample = alpha*(reward + gamma*(np.amax(Q_matrix[next_state])))
 
 			elif mode == "simple":
 				sample = alpha*(reward + gamma*(np.amax(Q_matrix[next_state])))
@@ -105,11 +102,8 @@ def ValueFunctionFactory(**kwargs):
 			raise Exception("No mode for Q-Learning named %s found")%(mode)
 
 	def createFunction(alg):
-		if alg == 'Q':
+		if alg == 'Q' and alg == 'SARSA':
 			return __Q
-
-		elif alg == 'SARSA':
-			return __SARSA
 
 		else:
 			raise Exception("No algorithm named %s found")%(alg)
@@ -179,7 +173,6 @@ class Player(object):
 
     def compute_state(self, state):
         return int(state.sum())
-
 
 class PlayerGameInterface(object):
     def __init__(self):

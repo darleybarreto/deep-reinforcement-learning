@@ -1,0 +1,1 @@
+__all__ =['game2048', 'logic2048','player2048']

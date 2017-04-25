@@ -1,21 +1,25 @@
 from rl.function_lib import ValueFunctionFactory
+from rl.function_lib import ActionFactory
 
 class Player(object):
-    def __init__(self, name, interface, **kwargs):
+    def __init__(self, name, interface, is_training=True, **kwargs):
+        self.is_training = is_training
+        self.Q_matrix = kwargs.get('Q_matrix', None)
         self._compute_score = 0
         self.actions = kwargs.get('actions', 1000)
         self.limit = kwargs.get('limit', False)
-        self.Q_matrix = kwargs.get('Q_matrix', None)
         self.alg = kwargs.get('alg', 'Q')
         self.interface = None
         self.player_name = name
+            
+        # if self.is_training and self.Q_matrix:
+        #     raise Exception("Not in training and no Q matrix given")
 
         self.vfunction_args = {
 			'mode':kwargs.get('mode', 'simple')
 		}
 
         factory, Q_matrix = ValueFunctionFactory(Q=self.Q_matrix,\
-            shape_Q=kwargs.get('shape_Q', False),\
             alpha=kwargs.get('alpha', 0.5),\
             gamma=kwargs.get('gamma', 1.),\
         )
@@ -26,30 +30,32 @@ class Player(object):
         if not self.Q_matrix:
             self.Q_matrix = Q_matrix
 
-        self.__attach_interface(interface)
+        self.attach_interface(interface)
 
-    def compute_info(self):
+    def compute_info(self, episode):
         return {
             'player_actions_number':self.actions,
             'player_limited_actions':self.limit,
             'value_function': self.vfunction.__name__,
             'Q_matrix': self.Q_matrix,
-            'player_name': self.player_name
+            'player_name': self.player_name,
+            'episode': episode
         }
 
 
-    def __attach_interface(self, interface):
+    def attach_interface(self, interface):
     	interface.connect_player(self)
     	self.interface = interface
 
     def compute_state(self, state):
-        return int(state.sum())
+        return hash(tuple(map(tuple, state)))
 
 
 class PlayerGameInterface(object):
-    def __init__(self):
+    def __init__(self,episode=0):
         self.player = None
         self.game = None
+        self.episode = episode
 
     def connect_player(self, player):
         self.player = player
@@ -64,11 +70,25 @@ class PlayerGameInterface(object):
             return result
 
     def update_state(self, next_state, reward):
-        self.player.update(next_state, reward)
-        self.player.make_action()
+        if self.player.is_training:
+            self.player.update(next_state, reward)
+        self.player.make_action(next_state)
 
     def compute_info(self):
-        return self.player.compute_info()
+        return self.player.compute_info(self.episode)
+         
 
     def is_conected(self):
         return self.player and self.game
+
+    def is_training(self):
+        return self.player.is_training
+
+    def game_mode(self):
+        return self.game.mode
+
+    def send_action(self,action):
+        self.game.action_made(action)
+
+    # def ask_next(self):
+    #     return self.game.matrix

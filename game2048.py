@@ -1,7 +1,7 @@
 from tkinter import *
-from tfe_lib.logic2048 import *
-from random import random, randint
-import time
+from logic2048 import *
+from sys import exit
+import pickle
 
 SIZE = 500
 GRID_LEN = 4
@@ -30,29 +30,35 @@ KEY_RIGHT = "'Right'"
 
 class Game2048(object):
 
-    def __init__(self, interface=None):
+    def __init__(self, game_number, interface=None):
         self.wins = 0
-        self.loss = 0
         self.game_number = 0
+        self.loses = 0
         self.score = 0
         self.actual_reward = 0
-        self.interface = None
+        self.interface = interface
+        self.attach_interface(interface)
+        self.commands = {   KEY_UP: up, KEY_DOWN: down, KEY_LEFT: left, KEY_RIGHT: right,
+                            KEY_UP_ALT: up, KEY_DOWN_ALT: down, KEY_LEFT_ALT: left, KEY_RIGHT_ALT: right }
+        
 
-    def __call__(self, mode = 'text'):
+    def __call__(self, mode):
+        self.mode = mode
         if mode == 'text':
             return GameText2048
 
         elif mode == 'gui':
-            return GameGrid2048
+            return GameGui2048
     
     def init_matrix(self):
-        self.matrix = new_game(4)
+        self.matrix = new_game()
 
         self.matrix=add_two(self.matrix)
         self.matrix=add_two(self.matrix)
 
     def update_and_notify(self):
-        self.ncompute_score_label['text'] = str(self.score)
+        if isinstance(self,GameGui2048):
+            self.ncompute_score_label['text'] = str(self.score)
 
         if self.interface and self.interface.is_conected():
             self.actual_reward = self.score - self.actual_reward
@@ -61,32 +67,36 @@ class Game2048(object):
     def save_data(self, file_name=None):
         if self.interface.is_conected():
             data_player = self.interface.compute_info()
-            data_player.update({'game_number': self.game_number,\
-                'wins': self.wins,\
-                'loss': self.loss
-                })
-            if not file_name: file_name = data_player['player_name']
-            np.save(file_name, data_player)
+            data_player.update({'wins': self.wins, 'loses':self.loses})
 
+            if not file_name:
+                if self.interface.is_training():
+                    file_name = data_player['player_name']
+
+                else:
+                    file_name = data_player['player_name'] +\
+                    '_episode_'+ str(data_player['episode']) + '_game_'\
+                    +str(self.game_number)
+
+            with open(file_name + '.pickle', 'wb') as handle:
+                    pickle.dump(data_player, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     def compute_score(self, score_earned):
         self.score +=  score_earned
 
     def finish(self, result):
-        self.game_number += 1
-
         if result == "Win!": self.wins += 1
-        elif result == "Lose!": self.loss += 1
+        else: self.loses += 1
 
-        # self.new_game()
-        self._keyinterrupt(None)
+        return self.keyinterrupt(None)
 
 
-    def __keyinterrupt(self, event):
+    def keyinterrupt(self, event):
         self.save_data()
-        self.quit()
+        if self.mode=='gui': self.quit()
+        else: return True
 
-    def __attach_interface(self, interface):
+    def attach_interface(self, interface):
         if interface: interface.connect_game(self)
         self.interface = interface
 
@@ -95,36 +105,54 @@ class Game2048(object):
 class GameText2048(Game2048):
     def __init__(self, interface=None):
         super(GameText2048, self).__init__(interface)
-
+        self.mode = 'text'
 
     def new_game(self):
         self.score = 0
+        self.init_matrix()
         self.update_and_notify()
+        self.game_number += 1
 
     def start_game(self):
         self.new_game()
+
+    def action_made(self, action):
+        # for a after action in text mode
+        # print(self.matrix)
+        self.matrix, done, score_earned = self.commands[action.title()](self.matrix)
+        # print(self.matrix)
+        self.compute_score(score_earned)
+        finished = False
+        if done:
+            self.matrix = add_two(self.matrix)
+            done=False
+            result = game_state(self.matrix)
+            if result:
+                finished = self.finish(result)
+        if not finished:
+            self.update_and_notify()
 
 
 class GameGui2048(Game2048, Frame):
     def __init__(self, interface=None):
         super(GameGui2048, self).__init__(interface)
+        self.mode = 'gui'
 
         Frame.__init__(self)
         self.grid()
         self.master.title('2048')
         self.master.bind("<Key>", self.key_down)
-        self.master.bind('<Control-c>', self._keyinterrupt)
+        self.master.bind('<Control-c>', self.keyinterrupt)
 
         self.background = None
         self.ncompute_score_label = 0
 
-        self.commands = {   KEY_UP: up, KEY_DOWN: down, KEY_LEFT: left, KEY_RIGHT: right,
-                            KEY_UP_ALT: up, KEY_DOWN_ALT: down, KEY_LEFT_ALT: left, KEY_RIGHT_ALT: right }
-        self.__attach_interface(interface)
         self.new_game()
 
 
     def new_game(self):
+        self.init_matrix()
+        self.game_number += 1
         if self.background:
             self.background.grid_forget()
             self.background.destroy()
@@ -142,7 +170,6 @@ class GameGui2048(Game2048, Frame):
         self.ncompute_score_label['text'] = str(self.score)
         self.grid_cells = []
         self.init_grid()
-        self.init_matrix()
         self.update_grid_cells()
 
         self.update_and_notify()

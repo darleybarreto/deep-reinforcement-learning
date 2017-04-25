@@ -23,15 +23,7 @@ def ValueFunctionFactory(**kwargs):
 
 	Q_matrix =  kwargs.get('Q', False)
 	if not Q_matrix:
-		if kwargs.get('shape_Q', False):
-			n_states, n_actions =  kwargs['shape_Q']
-			if not (type(n_states) == int and type(n_actions) == int):
-				raise Exception("Both n_states and n_actions must be int")
-		else:
-			raise Exception("shape_Q not found while Q is None")
-
-		Q_matrix = np.random.rand(n_states, n_actions)
-
+		Q_matrix = {}
 
 	def __Q(current_state, next_state, action, reward, **lwargs):
 		'''
@@ -66,22 +58,26 @@ def ValueFunctionFactory(**kwargs):
 
 			Q(s, a) = (1 - alpha)*Q(s,a) + alpha(R(s, a s') + gamma*fe(u,n))
 		'''
+		if current_state not in Q_matrix:
+			Q_matrix[current_state] = {0:0, 1:0, 2:0, 3:0}
+
+		if next_state not in Q_matrix:
+			Q_matrix[next_state] = {0:0, 1:0, 2:0, 3:0}
 
 		mode = lwargs.get('mode', 'simple')
-
 		if not mode== 'ef':
 
-			elif mode == "simple":
-				sample = alpha*(reward + gamma*(np.amax(Q_matrix[next_state])))
+			if mode == "simple":
+				sample = alpha*(reward + gamma*(np.amax(list(Q_matrix[next_state].values()))))
 
 			elif mode == "greddy":
 				# e-greedy
 				epsilon = lwargs.get('epsilon', 0.001)
 				if np.random.uniform(0, 1) <= epsilon:
-					sample = alpha*(reward + gamma*(np.random.choice(Q_matrix[next_state])))
+					sample = alpha*(reward + gamma*(np.random.choice(list(Q_matrix[next_state].values()))))
 
 				else:
-					sample = alpha*(reward + gamma*(np.amax(Q_matrix[next_state])))
+					sample = alpha*(reward + gamma*(np.amax(list(Q_matrix[next_state].values()))))
 
 			# elif mode == 'softmax':
 			# 	tau = lwargs.get('tau', 0.01)
@@ -90,7 +86,7 @@ def ValueFunctionFactory(**kwargs):
 
 		 #        sample = alpha*(reward + gamma*(np.random.choice(actions, p=values))
 
-			Q_matrix[current_state, action] = (1 - alpha)*Q_matrix[current_state, action]+sample
+			Q_matrix[current_state][action] = (1 - alpha)*Q_matrix[current_state][action]+sample
 
 
 		elif mode == 'ef':
@@ -102,28 +98,34 @@ def ValueFunctionFactory(**kwargs):
 			raise Exception("No mode for Q-Learning named %s found")%(mode)
 
 	def createFunction(alg):
-		if alg == 'Q' and alg == 'SARSA':
+		if alg == 'Q' or alg == 'SARSA':
 			return __Q
 
 		else:
-			raise Exception("No algorithm named %s found")%(alg)
+			raise Exception("No algorithm named %s found"%(alg))
 
 	return createFunction, Q_matrix
 
 def ActionFactory():
 	
-	def action2048(action):
+	def action2048(action, mode):
 		mapping = {0:'up',\
 			1:'down',\
 			2:'left',\
 			3:'right'
 		}
-		pyautogui.press(mapping[action])
+		if mode == 'text':
+			return "'" + mapping[action] +"'"
+		elif mode =='gui':
+			pyautogui.press(mapping[action])
+
+		else:
+			raise Exception("No mode for action 2048 named %s found"%(mode))
 
 	def createAction(action_type):
 		if action_type == '2048':
 			return action2048
 		else:
-			raise Exception("No action function named %s found")%(action_type)
+			raise Exception("No action function named %s found"%(action_type))
 
 	return createAction

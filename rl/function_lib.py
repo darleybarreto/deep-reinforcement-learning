@@ -59,10 +59,10 @@ def ValueFunctionFactory(**kwargs):
 			Q(s, a) = (1 - alpha)*Q(s,a) + alpha(R(s, a s') + gamma*fe(u,n))
 		'''
 		if current_state not in Q_matrix:
-			Q_matrix[current_state] = {0:0, 1:0, 2:0, 3:0}
+			Q_matrix[current_state] = {i:r for i, r in enumerate(np.random.randn(4))}
 
 		if next_state not in Q_matrix:
-			Q_matrix[next_state] = {0:0, 1:0, 2:0, 3:0}
+			Q_matrix[next_state] = {i:r for i, r in enumerate(np.random.randn(4))}
 
 		mode = lwargs.get('mode', 'simple')
 		if not mode== 'ef':
@@ -87,7 +87,7 @@ def ValueFunctionFactory(**kwargs):
 		 #        sample = alpha*(reward + gamma*(np.random.choice(actions, p=values))
 
 			Q_matrix[current_state][action] = (1 - alpha)*Q_matrix[current_state][action]+sample
-
+			# print(Q_matrix[current_state][action])
 
 		elif mode == 'ef':
 			k = lwargs.get('k', 10)

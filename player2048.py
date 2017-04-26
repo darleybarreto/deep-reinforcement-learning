@@ -45,6 +45,7 @@ class Player2048(Player):
 
             if current_state in self.Q_matrix:
                 action_to_do = max(self.Q_matrix[current_state].items(), key=itemgetter(1))[0]
+                # print(action_to_do)
             else:
                 action_to_do = randint(0,3)
 
@@ -64,12 +65,13 @@ class Player2048(Player):
         if self.interface.game_mode() == 'text':
             # print("Current state")
             # print(self.current_state)
+            print("[Choice " + str(self.alg) + " algorithm]: " + Player2048.mapping[self.current_action])
             self.interface.send_action(self.action_function(action_to_do,'text'))
 
-        print("[Choice " + str(self.alg) + " algorithm]: " + Player2048.mapping[self.current_action])
         
         if self.interface.game_mode() == 'gui':
-            # sleep(0.8)
+            sleep(0.05)
+            # print("[Choice " + str(self.alg) + " algorithm]: " + Player2048.mapping[self.current_action])
             self.action_function(action_to_do,'gui')
 
     def update(self, next_state, reward):

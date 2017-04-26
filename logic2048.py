@@ -1,7 +1,7 @@
 import numpy as np
 from random import randint
 
-def new_game(n):
+def new_game_matrix(n):
     matrix = np.zeros((n,n), dtype=np.uint64)
 
     return matrix

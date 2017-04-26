@@ -1,18 +1,23 @@
 from game2048  import Game2048, pickle
 from player2048 import Player2048 as Player
 from rl.player_lib import PlayerGameInterface as PGI
-
+import os
 _game = '2048'
 name = 'simple_q_2048'
-# interface = PGI()
 
+# interface = PGI(episode=1)
+
+# path = os.path.realpath(__file__)[:-7]
+# with open(path + '/data/' + name + '.pickle', 'rb') as handle:
+# 	Q_matrix = pickle.load(handle)['Q_matrix']
 # p = Player(name,
 # 			interface=interface,
 # 			is_training=True,
-# 			action_type=game,
-# 			mode='simple')
+# 			action_type=_game,
+# 			mode='greddy',
+# 			alg='Q')
 
-# game = Game2048()('text')(interface)
+# game = Game2048(1,shape=4)('gui')(1,interface=interface)
 # game.start_game()
 
 for i in range(10):
@@ -35,7 +40,7 @@ for i in range(10):
 				action_type=_game,
 				mode='simple')
 
-	game = Game2048()('text')(interface)
+	game = Game2048(0)('text')(0, interface=interface)
 	game.start_game()
 	print("End training")
 	print("Saving agent")

@@ -30,12 +30,13 @@ KEY_RIGHT = "'Right'"
 
 class Game2048(object):
 
-    def __init__(self, game_number, interface=None):
+    def __init__(self, game_number, shape=4,interface=None):
+        self.shape = shape
         self.wins = 0
         self.game_number = 0
         self.loses = 0
         self.score = 0
-        self.actual_reward = 0
+        self.previous_score = 0
         self.interface = interface
         self.attach_interface(interface)
         self.commands = {   KEY_UP: up, KEY_DOWN: down, KEY_LEFT: left, KEY_RIGHT: right,
@@ -44,6 +45,7 @@ class Game2048(object):
 
     def __call__(self, mode):
         self.mode = mode
+
         if mode == 'text':
             return GameText2048
 
@@ -51,7 +53,7 @@ class Game2048(object):
             return GameGui2048
     
     def init_matrix(self):
-        self.matrix = new_game()
+        self.matrix = new_game_matrix(self.shape)
 
         self.matrix=add_two(self.matrix)
         self.matrix=add_two(self.matrix)
@@ -61,8 +63,9 @@ class Game2048(object):
             self.ncompute_score_label['text'] = str(self.score)
 
         if self.interface and self.interface.is_conected():
-            self.actual_reward = self.score - self.actual_reward
-            self.interface.update_state(self.matrix, self.actual_reward)
+            re = self.previous_score
+            self.previous_score = self.score
+            self.interface.update_state(self.matrix, self.previous_score - re - 10)
 
     def save_data(self, file_name=None):
         if self.interface.is_conected():
@@ -103,8 +106,8 @@ class Game2048(object):
 
 
 class GameText2048(Game2048):
-    def __init__(self, interface=None):
-        super(GameText2048, self).__init__(interface)
+    def __init__(self, game_number, interface=None):
+        super(GameText2048, self).__init__(game_number, interface=interface)
         self.mode = 'text'
 
     def new_game(self):
@@ -134,8 +137,8 @@ class GameText2048(Game2048):
 
 
 class GameGui2048(Game2048, Frame):
-    def __init__(self, interface=None):
-        super(GameGui2048, self).__init__(interface)
+    def __init__(self, game_number, interface=None):
+        super(GameGui2048, self).__init__(game_number, interface=interface)
         self.mode = 'gui'
 
         Frame.__init__(self)

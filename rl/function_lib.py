@@ -58,6 +58,7 @@ def ValueFunctionFactory(**kwargs):
 
 			Q(s, a) = (1 - alpha)*Q(s,a) + alpha(R(s, a s') + gamma*fe(u,n))
 		'''
+		# print(reward)
 		if current_state not in Q_matrix:
 			Q_matrix[current_state] = {i:r for i, r in enumerate(np.random.randn(4))}
 

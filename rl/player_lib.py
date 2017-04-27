@@ -67,7 +67,7 @@ class PlayerGameInterface(object):
             return result
 
     def update_state(self, next_state, reward):
-        
+        # print(reward)
         if self.player.is_training:
             self.player.update(next_state, reward)
         # print(self.player.make_action(next_state))

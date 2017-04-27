@@ -2,8 +2,6 @@ from rl.player_lib import Player
 from random import random, randint
 from operator import itemgetter
 from time import sleep
-from sys import setrecursionlimit
-setrecursionlimit(15000)
 
 class Player2048(Player):
     mapping = {0:"'Up'",\
@@ -47,7 +45,6 @@ class Player2048(Player):
             if current_state in self.Q_matrix:
                 # print(current_state)
                 action_to_do = max(self.Q_matrix[current_state].items(), key=itemgetter(1))[0]
-                # print(action_to_do)
             else:
                 action_to_do = randint(0,3)
                 # print(action_to_do)

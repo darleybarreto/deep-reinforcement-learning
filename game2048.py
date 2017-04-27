@@ -47,13 +47,15 @@ class Game2048(object):
     def update_and_notify(self):
         finished = False
         if self.interface and self.interface.is_conected():
-            re = self.previous_score
-            self.previous_score = self.score
             if self.mode == 'text':
                 while not finished:
+                    re = self.previous_score
+                    self.previous_score = self.score
                     finished = self.action_made(self.interface.update_state(self.matrix, self.previous_score - re - 10))
             
             else:
+                re = self.previous_score
+                self.previous_score = self.score
                 self.ncompute_score_label['text'] = str(self.score)
                 self.interface.update_state(self.matrix, self.previous_score - re - 10)
 
@@ -115,7 +117,7 @@ class GameText2048(Game2048):
     def action_made(self, action):
         # for a after action in text mode
         self.matrix, done, score_earned = self.commands[action.title()](self.matrix)
-        # print(self.matrix)
+        # print(score_earned)
         self.compute_score(score_earned)
         finished = False
         if done:
@@ -124,7 +126,7 @@ class GameText2048(Game2048):
             result = game_state(self.matrix)
             if result:
                 finished = self.finish(result)
-        
+        # print(self.score)
         return finished
         # self.update_and_notify()
 

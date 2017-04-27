@@ -45,7 +45,7 @@ class Player2048(Player):
             current_state = self.compute_state(current_state)
 
             if current_state in self.Q_matrix:
-                # print(self.Q_matrix[current_state])
+                # print(current_state)
                 action_to_do = max(self.Q_matrix[current_state].items(), key=itemgetter(1))[0]
                 # print(action_to_do)
             else:
@@ -59,9 +59,8 @@ class Player2048(Player):
         if not self.is_training:
             # initial state
             self.current_state = next_state
-        # print(self.current_state)
+        # print(self.current_state
         action_to_do, reward = self.ask_action(self.current_state)
-        # print(action_to_do)
         self.current_action = action_to_do
         self.present_reward = reward
 

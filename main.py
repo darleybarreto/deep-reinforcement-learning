@@ -8,10 +8,6 @@ _game = '2048'
 name = 'simple_q_2048'
 
 # interface = PGI(episode=1)
-
-# path = os.path.realpath(__file__)[:-7]
-# with open(path + '/data/' + name + '.pickle', 'rb') as handle:
-# 	Q_matrix = pickle.load(handle)['Q_matrix']
 # p = Player(name,
 # 			interface=interface,
 # 			is_training=True,
@@ -21,11 +17,12 @@ name = 'simple_q_2048'
 
 # game = Game2048(1,shape=4)('gui')(1,interface=interface)
 # game.start_game()
+
 n_episodes = 100
 n_train = 100
 n_plays = 10
 alg = 'SARSA'
-model = 'greddy'
+model = 'simple'
 play_matches = {}
 
 for i in range(n_episodes):

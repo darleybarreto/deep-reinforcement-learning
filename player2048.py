@@ -6,7 +6,6 @@ from sys import setrecursionlimit
 setrecursionlimit(15000)
 
 class Player2048(Player):
-
     mapping = {0:"'Up'",\
             1:"'Down'",\
             2:"'Left'",\
@@ -24,6 +23,7 @@ class Player2048(Player):
         '''
         action_to_do = None
         max_reward = 0
+
         if self.is_training and not self.alg=="SARSA":
             for action in [0, 1, 2, 3]:
                 next_state, is_done, reward = self.interface.ask_game('commands',\
@@ -41,14 +41,17 @@ class Player2048(Player):
                     action_to_do = action
                     max_reward = reward
         else:
+            # print(current_state)
             current_state = self.compute_state(current_state)
 
             if current_state in self.Q_matrix:
+                # print(self.Q_matrix[current_state])
                 action_to_do = max(self.Q_matrix[current_state].items(), key=itemgetter(1))[0]
                 # print(action_to_do)
             else:
                 action_to_do = randint(0,3)
-
+                # print(action_to_do)
+            # print(action_to_do)
         return action_to_do, max_reward
 
 
@@ -56,21 +59,21 @@ class Player2048(Player):
         if not self.is_training:
             # initial state
             self.current_state = next_state
-
+        # print(self.current_state)
         action_to_do, reward = self.ask_action(self.current_state)
-
+        # print(action_to_do)
         self.current_action = action_to_do
         self.present_reward = reward
 
         if self.interface.game_mode() == 'text':
             # print("Current state")
             # print(self.current_state)
-            print("[Choice " + str(self.alg) + " algorithm]: " + Player2048.mapping[self.current_action])
-            self.interface.send_action(self.action_function(action_to_do,'text'))
-
+            # print("[Choice " + str(self.alg) + " algorithm]: " + Player2048.mapping[self.current_action])
+            # Player2048.stack += 1
+            return self.action_function(action_to_do,'text')
         
         if self.interface.game_mode() == 'gui':
-            sleep(0.05)
+            # sleep(0.05)
             # print("[Choice " + str(self.alg) + " algorithm]: " + Player2048.mapping[self.current_action])
             self.action_function(action_to_do,'gui')
 

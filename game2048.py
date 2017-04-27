@@ -59,30 +59,37 @@ class Game2048(object):
         self.matrix=add_two(self.matrix)
 
     def update_and_notify(self):
-        if isinstance(self,GameGui2048):
-            self.ncompute_score_label['text'] = str(self.score)
-
+        finished = False
         if self.interface and self.interface.is_conected():
             re = self.previous_score
             self.previous_score = self.score
-            self.interface.update_state(self.matrix, self.previous_score - re - 10)
+            if self.mode == 'text':
+                while not finished:
+                    finished = self.action_made(self.interface.update_state(self.matrix, self.previous_score - re - 10))
+            
+            else:
+                self.ncompute_score_label['text'] = str(self.score)
+                self.interface.update_state(self.matrix, self.previous_score - re - 10)
+
+    def action_made(self, action):
+        raise Exception("Not implemented")
 
     def save_data(self, file_name=None):
         if self.interface.is_conected():
             data_player = self.interface.compute_info()
-            data_player.update({'wins': self.wins, 'loses':self.loses})
+            # data_player.update({'wins': self.wins, 'loses':self.loses})
 
             if not file_name:
-                if self.interface.is_training():
-                    file_name = data_player['player_name']
+                # if self.interface.is_training():
+                file_name = data_player['player_name']
 
-                else:
-                    file_name = data_player['player_name'] +\
-                    '_episode_'+ str(data_player['episode']) + '_game_'\
-                    +str(self.game_number)
+                # else:
+                #     file_name = data_player['player_name'] +\
+                #     '_episode_'+ str(data_player['episode']) + '_game_'\
+                #     +str(self.game_number)
 
             with open(file_name + '.pickle', 'wb') as handle:
-                    pickle.dump(data_player, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                pickle.dump(data_player, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     def compute_score(self, score_earned):
         self.score +=  score_earned
@@ -95,9 +102,9 @@ class Game2048(object):
 
 
     def keyinterrupt(self, event):
-        self.save_data()
+        # self.save_data()
         if self.mode=='gui': self.quit()
-        else: return True
+        return True
 
     def attach_interface(self, interface):
         if interface: interface.connect_game(self)
@@ -132,8 +139,9 @@ class GameText2048(Game2048):
             result = game_state(self.matrix)
             if result:
                 finished = self.finish(result)
-        if not finished:
-            self.update_and_notify()
+        
+        return finished
+        # self.update_and_notify()
 
 
 class GameGui2048(Game2048, Frame):
@@ -144,7 +152,7 @@ class GameGui2048(Game2048, Frame):
         Frame.__init__(self)
         self.grid()
         self.master.title('2048')
-        self.master.bind("<Key>", self.key_down)
+        self.master.bind("<Key>", self.action_made)
         self.master.bind('<Control-c>', self.keyinterrupt)
 
         self.background = None
@@ -206,10 +214,10 @@ class GameGui2048(Game2048, Frame):
     def start_game(self):
         self.mainloop()
 
-    def key_down(self, event):
+    def action_made(self, event):
         key = repr(event.keysym)
         if key in self.commands:
-            self.matrix, done, score_earned = self.commands[repr(event.keysym)](self.matrix)
+            self.matrix, done, score_earned = self.commands[key](self.matrix)
             self.compute_score(score_earned)
             if done:
                 self.matrix = add_two(self.matrix)

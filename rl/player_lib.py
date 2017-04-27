@@ -11,9 +11,6 @@ class Player(object):
         self.alg = kwargs.get('alg', 'Q')
         self.interface = None
         self.player_name = name
-            
-        # if self.is_training and self.Q_matrix:
-        #     raise Exception("Not in training and no Q matrix given")
 
         self.vfunction_args = {
 			'mode':kwargs.get('mode', 'simple')
@@ -73,7 +70,8 @@ class PlayerGameInterface(object):
         
         if self.player.is_training:
             self.player.update(next_state, reward)
-        self.player.make_action(next_state)
+        # print(self.player.make_action(next_state))
+        return self.player.make_action(next_state)
 
     def compute_info(self):
         return self.player.compute_info(self.episode)
@@ -87,9 +85,3 @@ class PlayerGameInterface(object):
 
     def game_mode(self):
         return self.game.mode
-
-    def send_action(self,action):
-        self.game.action_made(action)
-
-    # def ask_next(self):
-    #     return self.game.matrix

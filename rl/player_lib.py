@@ -30,14 +30,16 @@ class Player(object):
         self.attach_interface(interface)
 
     def compute_info(self, episode):
-        return {
-            'player_actions_number':self.actions,
-            'player_limited_actions':self.limit,
-            'value_function': self.vfunction.__name__,
-            'Q_matrix': self.Q_matrix,
-            'player_name': self.player_name,
-            'episode': episode
-        }
+        return {'Q_matrix': self.Q_matrix,
+        'player_name': self.player_name}
+        # return {
+        #     'player_actions_number':self.actions,
+        #     'player_limited_actions':self.limit,
+        #     'value_function': self.vfunction.__name__,
+        #     'Q_matrix': self.Q_matrix,
+        #     'player_name': self.player_name,
+        #     'episode': episode
+        # }
 
 
     def attach_interface(self, interface):

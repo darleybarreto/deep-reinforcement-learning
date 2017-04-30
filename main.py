@@ -1,9 +1,7 @@
 from game2048  import Game2048
 from player2048 import Player2048 as Player
 from rl.player_lib import PlayerGameInterface as PGI
-import os
 import dill
-
 _game = '2048'
 name = 'simple_q_2048'
 
@@ -18,12 +16,17 @@ name = 'simple_q_2048'
 # game = Game2048(1,shape=4)('gui')(1,interface=interface)
 # game.start_game()
 
-n_episodes = 5
-n_train = 500
-n_plays = 5
+n_episodes = 100
+n_train = 100
+n_plays = 0
 alg = 'Q'
 model = 'simple'
 play_matches = {}
+
+Q_matrix = None
+# with open(name + '.pickle', 'rb') as handle:
+# 	Q_matrix = dill.load(play_matches, handle)['Q_matrix']
+
 
 for i in range(n_episodes):
 	play_matches.update({i:{'training': None, 'testing': None}})
@@ -32,7 +35,7 @@ for i in range(n_episodes):
 	interface = PGI(episode=i)
 	
 
-	if i == 0:
+	if not Q_matrix and i == 0:
 		Q_matrix = None
 	
 	print("Beginning Training")
@@ -73,8 +76,6 @@ for i in range(n_episodes):
 	play_matches[i]['testing'] = {'wins': game.wins, 'loses': game.loses} 
 
 print("Saving agent")
-# with open(name + '.pickle', 'wb') as handle:
-# 	pickle.dump(p, handle, protocol=pickle.HIGHEST_PROTOCOL)
 game.save_data()
 print("Agent saved")
 

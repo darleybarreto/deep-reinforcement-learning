@@ -3,6 +3,8 @@
 import math
 import os
 import time
+import cv2
+import numpy as np
 from random import randint
 from collections import deque
 
@@ -325,7 +327,9 @@ def main():
     pipes = deque()
 
     frame_clock = 0  # this counter is only incremented if the game isn't paused
+    past_score = 0
     score = 0
+    reward = 0
     done = paused = False
 
     while not done:
@@ -368,16 +372,19 @@ def main():
         bird.update()
         display_surface.blit(bird.image, bird.rect)
 
-        stri = pygame.image.tostring(display_surface, "RGB")
-
         # update and display score
         for p in pipes:
             if p.x + PipePair.WIDTH < bird.x and not p.score_counted:
                 score += 1
                 p.score_counted = True
 
+        past_score = int(score)
+        reward = score - past_score
         score_surface = score_font.render(str(score), True, (255, 255, 255))
         score_x = WIN_WIDTH/2 - score_surface.get_width()/2
+
+        stacked = extract_image(display_surface, reward)
+
         display_surface.blit(score_surface, (score_x, PipePair.PIECE_HEIGHT))
 
         pygame.display.flip()
@@ -385,6 +392,18 @@ def main():
     print('Game over! Score: %i' % score)
     pygame.quit()
 
+def extract_image(display_surface, reward):
+    # get the image as a numpy array
+    image_data = pygame.surfarray.array3d(display_surface)
+    
+    # resizing the image and change color to grayscale
+    x_t = cv2.cvtColor(cv2.resize(image_data, (80, 80)), cv2.COLOR_BGR2GRAY)
+    
+    # The threshold function applies fixed-level thresholding to a single-channel array
+    # threshold(array,threshold,maximum value,thresholding type)
+    ret, x_t = cv2.threshold(x_t,1,255,cv2.THRESH_BINARY)
+    stack_x = np.stack((x_t, x_t, x_t, x_t), axis=2)
+    return stack_x
 
 if __name__ == '__main__':
     # If this module had been imported, __name__ would be 'flappybird'.

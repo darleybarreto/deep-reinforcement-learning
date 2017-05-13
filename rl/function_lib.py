@@ -71,7 +71,7 @@ def ValueFunctionFactory(**kwargs):
 			if mode == "simple":
 				sample = alpha*(reward + gamma*(np.amax(list(Q_matrix[next_state].values()))))
 
-			elif mode == "greddy":
+			elif mode == "greedy":
 				# e-greedy
 				epsilon = lwargs.get('epsilon', 0.001)
 				if np.random.uniform(0, 1) <= epsilon:
@@ -90,7 +90,6 @@ def ValueFunctionFactory(**kwargs):
 		 		raise Exception("No mode for Q-Learning named %s found"%(mode))
 
 			Q_matrix[current_state][action] = (1 - alpha)*Q_matrix[current_state][action]+sample
-			# print(Q_matrix[current_state][action])
 
 		elif mode == 'ef':
 			k = lwargs.get('k', 10)

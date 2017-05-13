@@ -16,11 +16,11 @@ name = 'simple_q_2048'
 # game = Game2048(1,shape=4)('gui')(1,interface=interface)
 # game.start_game()
 
-n_episodes = 100
-n_train = 100
-n_plays = 0
-alg = 'Q'
-model = 'simple'
+n_episodes = 1
+n_train = 1000
+n_plays = 1
+alg = 'SARSA'
+model = 'greedy'
 play_matches = {}
 
 Q_matrix = None
@@ -58,7 +58,7 @@ for i in range(n_episodes):
 
 	# print("Ending training")
 	print("Beginning testing")
-	game = Game2048(0)('text')(0, interface=interface)
+	game = Game2048(0)('gui')(0, interface=interface)
 	for j in range(n_plays):
 		# print(j)
 		# playing
@@ -75,11 +75,11 @@ for i in range(n_episodes):
 	# print("Ending testing")
 	play_matches[i]['testing'] = {'wins': game.wins, 'loses': game.loses} 
 
-print("Saving agent")
-game.save_data()
-print("Agent saved")
+# print("Saving agent")
+# game.save_data()
+# print("Agent saved")
 
-print("Saving log")
-with open('log' + '.pickle', 'wb') as handle:
-	dill.dump(play_matches, handle)
-print("Log saved")
+# print("Saving log")
+# with open('log' + '.pickle', 'wb') as handle:
+# 	dill.dump(play_matches, handle)
+# print("Log saved")

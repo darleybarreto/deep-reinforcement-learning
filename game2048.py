@@ -1,7 +1,5 @@
 from tkinter import *
 from logic2048 import *
-from ZODB import FileStorage, DB
-import transaction
 
 
 KEY_UP_ALT = "\'\\uf700\'"
@@ -14,8 +12,6 @@ KEY_DOWN = "'Down'"
 KEY_LEFT = "'Left'"
 KEY_RIGHT = "'Right'"
 
-storage = FileStorage.FileStorage('DB/qstorage.fs')
-db = DB(storage)
 
 class Game2048(object):
 
@@ -78,13 +74,6 @@ class Game2048(object):
                 #     file_name = data_player['player_name'] +\
                 #     '_episode_'+ str(data_player['episode']) + '_game_'\
                 #     +str(self.game_number)
-            connection = db.open()
-            root = connection.root()
-            root['player'] = data_player
-            transaction.commit()
-            connection.close()
-            db.close()
-            storage.close()
             # with open(file_name + '.qmatrix', 'wb') as handle:
             #     dill.dump(data_player, handle)
 

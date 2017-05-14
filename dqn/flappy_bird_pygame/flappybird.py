@@ -17,6 +17,7 @@ ANIMATION_SPEED = 0.1  # pixels per millisecond
 WIN_WIDTH = 284 * 2     # BG image size: 284x512 px; tiled twice
 WIN_HEIGHT = 512
 
+possible_actions = {0: "up", 1: ""}
 
 class Bird(pygame.sprite.Sprite):
     """Represents the bird controlled by the player.
@@ -304,7 +305,7 @@ def msec_to_frames(milliseconds, fps=FPS):
     return fps * milliseconds / 1000.0
 
 
-def main():
+def main(save_path, dqn, select_action, perform_action, optimize, train=True):
     """The application's entry point.
 
     If someone executes this module (instead of importing it, for
@@ -380,19 +381,26 @@ def main():
 
         past_score = int(score)
         reward = score - past_score
+
+        if train:
+            train_and_play(display_surface, select_action, possible_actions, optimize)
+        else:
+            play(display_surface, select_action, possible_actions)
+
         score_surface = score_font.render(str(score), True, (255, 255, 255))
         score_x = WIN_WIDTH/2 - score_surface.get_width()/2
-
-        stacked = extract_image(display_surface, reward)
 
         display_surface.blit(score_surface, (score_x, PipePair.PIECE_HEIGHT))
 
         pygame.display.flip()
         frame_clock += 1
+
     print('Game over! Score: %i' % score)
+    save_model(save_path, dqn)
+    
     pygame.quit()
 
-def extract_image(display_surface, reward):
+def extract_image(display_surface):
     # get the image as a numpy array
     image_data = pygame.surfarray.array3d(display_surface)
     
@@ -405,8 +413,18 @@ def extract_image(display_surface, reward):
     stack_x = np.stack((x_t, x_t, x_t, x_t), axis=2)
     return stack_x
 
-def learning():
-    
+def play(stacked_img, select_action, possible_actions):
+    state = extract_image(display_surface)
+    action = select_action(state)
+    perform_action(possible_actions, action)
+
+def train_and_play(stacked_img, select_action, possible_actions, optimize):
+    play(stacked_img, select_action, possible_actions)
+    optimize()
+    return
+
+def save_model(path, model):
+    pass
 
 if __name__ == '__main__':
     # If this module had been imported, __name__ would be 'flappybird'.

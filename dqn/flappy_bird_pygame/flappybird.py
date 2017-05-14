@@ -1,4 +1,6 @@
-"""Flappy Bird, implemented using Pygame."""
+# Flappy Bird, implemented using Pygame.
+# Credits for the game to https://github.com/TimoWilken/flappy-bird-pygame
+
 
 import math
 import os
@@ -13,8 +15,8 @@ from pygame.locals import *
 
 
 FPS = 60
-ANIMATION_SPEED = 0.1  # pixels per millisecond
-WIN_WIDTH = 284 * 2     # BG image size: 284x512 px; tiled twice
+ANIMATION_SPEED = 0.1   # pixels per millisecond
+WIN_WIDTH = 288         # BG image size: 288x512 px
 WIN_HEIGHT = 512
 
 possible_actions = {0: "up", 1: ""}
@@ -305,12 +307,14 @@ def msec_to_frames(milliseconds, fps=FPS):
     return fps * milliseconds / 1000.0
 
 
-def main(save_path, dqn, select_action, perform_action, optimize, train=True):
+def main(save_path, model, train=True):
     """The application's entry point.
 
     If someone executes this module (instead of importing it, for
     example), this function is called.
     """
+    select_action, perform_action, optimize, save_model = model
+
     pygame.init()
 
     display_surface = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
@@ -379,13 +383,15 @@ def main(save_path, dqn, select_action, perform_action, optimize, train=True):
                 score += 1
                 p.score_counted = True
 
+        bird_area = map_bird_area(bird.rect, display_surface)
+        
         past_score = int(score)
         reward = score - past_score
 
         if train:
-            train_and_play(display_surface, select_action, possible_actions, optimize)
+            train_and_play(bird_area, select_action, possible_actions, optimize)
         else:
-            play(display_surface, select_action, possible_actions)
+            play(bird_area, select_action, possible_actions)
 
         score_surface = score_font.render(str(score), True, (255, 255, 255))
         score_x = WIN_WIDTH/2 - score_surface.get_width()/2
@@ -396,14 +402,17 @@ def main(save_path, dqn, select_action, perform_action, optimize, train=True):
         frame_clock += 1
 
     print('Game over! Score: %i' % score)
-    save_model(save_path, dqn)
+    reward -= 1000
+    # do something the above information
+    # 
+    save_model(save_path)
     
     pygame.quit()
 
 def extract_image(display_surface):
     # get the image as a numpy array
     image_data = pygame.surfarray.array3d(display_surface)
-    
+    # pygame.image.save(display_surface, "screenshot.jpg")
     # resizing the image and change color to grayscale
     x_t = cv2.cvtColor(cv2.resize(image_data, (80, 80)), cv2.COLOR_BGR2GRAY)
     
@@ -414,17 +423,32 @@ def extract_image(display_surface):
     return stack_x
 
 def play(stacked_img, select_action, possible_actions):
-    state = extract_image(display_surface)
+    state = extract_image(stacked_img)
     action = select_action(state)
-    perform_action(possible_actions, action)
+    # print(action)
+    # perform_action(possible_actions, action)
 
 def train_and_play(stacked_img, select_action, possible_actions, optimize):
     play(stacked_img, select_action, possible_actions)
     optimize()
     return
 
-def save_model(path, model):
-    pass
+def map_bird_area(rect, display_surface):
+    bird_x, bird_y, bird_w, bird_h = (rect)
+    
+    if bird_x < 140:
+        bird_x = int(bird_x) - (int(bird_x) % 10)
+    else:
+        bird_x = int(bird_x) - (int(bird_x) % 70)
+
+    if bird_y < 180:
+        bird_y = int(bird_y) - (int(bird_y) % 10)
+    else:
+        bird_y = int(bird_y) - (int(bird_y) % 60)
+
+    bird_rect = Rect(bird_x, bird_y, bird_w, bird_h)
+
+    return display_surface.subsurface(bird_rect)
 
 if __name__ == '__main__':
     # If this module had been imported, __name__ would be 'flappybird'.

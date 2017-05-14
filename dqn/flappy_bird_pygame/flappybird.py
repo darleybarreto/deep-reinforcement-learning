@@ -405,6 +405,9 @@ def extract_image(display_surface, reward):
     stack_x = np.stack((x_t, x_t, x_t, x_t), axis=2)
     return stack_x
 
+def learning():
+    
+
 if __name__ == '__main__':
     # If this module had been imported, __name__ would be 'flappybird'.
     # It was executed (e.g. by double-clicking the file), so call main.

@@ -18,7 +18,6 @@ FPS = 60
 ANIMATION_SPEED = 0.1   # pixels per millisecond
 WIN_WIDTH = 288         # BG image size: 288x512 px
 WIN_HEIGHT = 512
-
 possible_actions = {0: "up", 1: ""}
 
 class Bird(pygame.sprite.Sprite):
@@ -406,15 +405,16 @@ def main(save_path, model, train=True):
     # do something the above information
     # 
     save_model(save_path)
-    
+
     pygame.quit()
+    return score
 
 def extract_image(display_surface):
     # get the image as a numpy array
     image_data = pygame.surfarray.array3d(display_surface)
     # pygame.image.save(display_surface, "screenshot.jpg")
     # resizing the image and change color to grayscale
-    x_t = cv2.cvtColor(cv2.resize(image_data, (80, 80)), cv2.COLOR_BGR2GRAY)
+    x_t = cv2.cvtColor(cv2.resize(image_data, (80,80)), cv2.COLOR_BGR2GRAY)
     
     # The threshold function applies fixed-level thresholding to a single-channel array
     # threshold(array,threshold,maximum value,thresholding type)
@@ -449,6 +449,20 @@ def map_bird_area(rect, display_surface):
     bird_rect = Rect(bird_x, bird_y, bird_w, bird_h)
 
     return display_surface.subsurface(bird_rect)
+
+
+def flappy_bird_model():
+    # The input of the first layer corresponds to
+    # the number of most recent frames stacked together as describe in the paper
+    shape = [
+                [4, 32, 8, 4],    # first layer
+                [32,64,4,2],      # second layer
+                [64,64,3,1],      # third layer
+            ]
+
+    fully_connected = [1600,512]
+
+    return shape, fully_connected, len(possible_actions)
 
 if __name__ == '__main__':
     # If this module had been imported, __name__ would be 'flappybird'.

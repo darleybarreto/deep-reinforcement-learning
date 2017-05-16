@@ -3,12 +3,13 @@ These algorithms are most assignments for the Deep Reinforcement Learning course
 
 ## Content
 This repo has the base algorithms and some games as well.
-At the moment, it contains only 2048.
+At the moment, it contains 2048 and Flappy Bird.
 
 ## Usage
 You must install numpy for running the algorithms.
 As for the games:
 1. 2048: install pyautogui
+2. Flappy Bird: install pyautogui, pygame, cv2, pytorch
 
 ## Contributing
 
@@ -22,3 +23,4 @@ As for the games:
 ## Credits
 
 1. For the 2048 source code: https://github.com/yangshun/2048-python
+2. For the Flappy Bird source code: https://github.com/TimoWilken/flappy-bird-pygame

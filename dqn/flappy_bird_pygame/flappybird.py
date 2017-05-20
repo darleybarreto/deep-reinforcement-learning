@@ -5,14 +5,13 @@
 import math
 import os
 import time
-import cv2
 import numpy as np
 from random import randint
 from collections import deque
 
 import pygame
 from pygame.locals import *
-
+from util import *
 
 FPS = 60
 ANIMATION_SPEED = 0.1   # pixels per millisecond
@@ -306,132 +305,129 @@ def msec_to_frames(milliseconds, fps=FPS):
     return fps * milliseconds / 1000.0
 
 
-def main(save_path, model, train=True):
+def init_main(save_path, model, train=True):
     """The application's entry point.
 
     If someone executes this module (instead of importing it, for
     example), this function is called.
     """
-    select_action, perform_action, optimize, save_model = model
-
-    pygame.init()
-
-    display_surface = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
-    pygame.display.set_caption('Pygame Flappy Bird')
-
-    clock = pygame.time.Clock()
-    score_font = pygame.font.SysFont(None, 32, bold=True)  # default font
-    images = load_images()
-
-    # the bird stays in the same x position, so bird.x is a constant
-    # center bird on screen
-    bird = Bird(50, int(WIN_HEIGHT/2 - Bird.HEIGHT/2), 2,
-                (images['bird-wingup'], images['bird-wingdown']))
-
-    pipes = deque()
-
-    frame_clock = 0  # this counter is only incremented if the game isn't paused
-    past_score = 0
-    score = 0
+    push_to_memory, select_action, perform_action, optimize, save_model = model
     reward = 0
-    done = paused = False
+    reward_alive = 0.1
+    reward_dead = 0
 
-    while not done:
-        clock.tick(FPS)
-        # pygame.image.save(display_surface, os.getcwd() + '/image_'+ str(int(time.time())) + '_.png')
-        # Handle this 'manually'.  If we used pygame.time.set_timer(),
-        # pipe addition would be messed up when paused.
-        if not (paused or frame_clock % msec_to_frames(PipePair.ADD_INTERVAL)):
-            pp = PipePair(images['pipe-end'], images['pipe-body'])
-            pipes.append(pp)
+    def main():
+        pygame.init()
 
-        for e in pygame.event.get():
-            if e.type == QUIT or (e.type == KEYUP and e.key == K_ESCAPE):
-                done = True
-                break
-            elif e.type == KEYUP and e.key in (K_PAUSE, K_p):
-                paused = not paused
-            elif e.type == MOUSEBUTTONUP or (e.type == KEYUP and
-                    e.key in (K_UP, K_RETURN, K_SPACE)):
-                bird.msec_to_climb = Bird.CLIMB_DURATION
+        display_surface = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
+        pygame.display.set_caption('Pygame Flappy Bird')
 
-        if paused:
-            continue  # don't draw anything
+        clock = pygame.time.Clock()
+        score_font = pygame.font.SysFont(None, 32, bold=True)  # default font
+        images = load_images()
 
-        # check for collisions
-        pipe_collision = any(p.collides_with(bird) for p in pipes)
-        if pipe_collision or 0 >= bird.y or bird.y >= WIN_HEIGHT - Bird.HEIGHT:
-            done = True
+        # the bird stays in the same x position, so bird.x is a constant
+        # center bird on screen
+        bird = Bird(50, int(WIN_HEIGHT/2 - Bird.HEIGHT/2), 2,
+                    (images['bird-wingup'], images['bird-wingdown']))
 
-        for x in (0, WIN_WIDTH / 2):
-            display_surface.blit(images['background'], (x, 0))
+        pipes = deque()
 
-        while pipes and not pipes[0].visible:
-            pipes.popleft()
+        frame_clock = 0  # this counter is only incremented if the game isn't paused
+        past_score = 0
+        score = 0
 
-        for p in pipes:
-            p.update()
-            display_surface.blit(p.image, p.rect)
-
-        bird.update()
-        display_surface.blit(bird.image, bird.rect)
-
-        # update and display score
-        for p in pipes:
-            if p.x + PipePair.WIDTH < bird.x and not p.score_counted:
-                score += 1
-                p.score_counted = True
+        done = paused = False
 
         bird_area = map_bird_area(bird.rect, display_surface)
-        
-        past_score = int(score)
-        reward = score - past_score
 
-        if train:
-            train_and_play(bird_area, select_action, possible_actions, optimize)
-        else:
-            play(bird_area, select_action, possible_actions)
+        x_t = extract_image(pygame.surfarray.array3d(display_surface),(80,80))
 
-        score_surface = score_font.render(str(score), True, (255, 255, 255))
-        score_x = WIN_WIDTH/2 - score_surface.get_width()/2
+        stack_x = np.stack((x_t, x_t, x_t, x_t), axis=2)
 
-        display_surface.blit(score_surface, (score_x, PipePair.PIECE_HEIGHT))
+        while not done:
+            clock.tick(FPS)
+            # pygame.image.save(display_surface, os.getcwd() + '/image_'+ str(int(time.time())) + '_.png')
+            # Handle this 'manually'.  If we used pygame.time.set_timer(),
+            # pipe addition would be messed up when paused.
+            if not (paused or frame_clock % msec_to_frames(PipePair.ADD_INTERVAL)):
+                pp = PipePair(images['pipe-end'], images['pipe-body'])
+                pipes.append(pp)
 
-        pygame.display.flip()
-        frame_clock += 1
+            for e in pygame.event.get():
+                if e.type == QUIT or (e.type == KEYUP and e.key == K_ESCAPE):
+                    done = True
+                    break
+                elif e.type == KEYUP and e.key in (K_PAUSE, K_p):
+                    paused = not paused
+                elif e.type == MOUSEBUTTONUP or (e.type == KEYUP and
+                        e.key in (K_UP, K_RETURN, K_SPACE)):
+                    bird.msec_to_climb = Bird.CLIMB_DURATION
 
-    print('Game over! Score: %i' % score)
-    reward -= 1000
-    # do something the above information
-    # 
-    save_model(save_path)
+            if paused:
+                continue  # don't draw anything
 
-    pygame.quit()
-    return score
+            # check for collisions
+            pipe_collision = any(p.collides_with(bird) for p in pipes)
+            if pipe_collision or 0 >= bird.y or bird.y >= WIN_HEIGHT - Bird.HEIGHT:
+                done = True
 
-def extract_image(display_surface):
-    # get the image as a numpy array
-    image_data = pygame.surfarray.array3d(display_surface)
-    # pygame.image.save(display_surface, "screenshot.jpg")
-    # resizing the image and change color to grayscale
-    x_t = cv2.cvtColor(cv2.resize(image_data, (80,80)), cv2.COLOR_BGR2GRAY)
-    
-    # The threshold function applies fixed-level thresholding to a single-channel array
-    # threshold(array,threshold,maximum value,thresholding type)
-    ret, x_t = cv2.threshold(x_t,1,255,cv2.THRESH_BINARY)
-    stack_x = np.stack((x_t, x_t, x_t, x_t), axis=2)
-    return stack_x
+            for x in (0, WIN_WIDTH / 2):
+                display_surface.blit(images['background'], (x, 0))
 
-def play(stacked_img, select_action, possible_actions):
-    state = extract_image(stacked_img)
-    action = select_action(state)
-    # print(action)
-    # perform_action(possible_actions, action)
+            while pipes and not pipes[0].visible:
+                pipes.popleft()
 
-def train_and_play(stacked_img, select_action, possible_actions, optimize):
-    play(stacked_img, select_action, possible_actions)
-    optimize()
-    return
+            for p in pipes:
+                p.update()
+                display_surface.blit(p.image, p.rect)
+
+            bird.update()
+            display_surface.blit(bird.image, bird.rect)
+
+            # update and display score
+            for p in pipes:
+                if p.x + PipePair.WIDTH < bird.x and not p.score_counted:
+                    score += 1
+                    p.score_counted = True
+
+            # ---------------  Train  ---------------
+            bird_area = map_bird_area(bird.rect, display_surface)
+            
+            past_score = int(score)
+            
+            reward_alive += 0.1
+            reward += reward_alive + score
+
+            x_t = extract_image(pygame.surfarray.array3d(bird_area),(80,80))
+            st = np.append(x_t, stack_x[:, :, :3], axis=2)
+
+            if train:
+                action = train_and_play(st, select_action, possible_actions, optimize)
+            else:
+                action = play(st, select_action, possible_actions)
+
+            push_to_memory(stack_x, action, st, reward)
+            stack_x = st
+
+            # ---------------  Train  ---------------
+
+            score_surface = score_font.render(str(score), True, (255, 255, 255))
+            score_x = WIN_WIDTH/2 - score_surface.get_width()/2
+
+            display_surface.blit(score_surface, (score_x, PipePair.PIECE_HEIGHT))
+
+            pygame.display.flip()
+            frame_clock += 1
+
+        print('Game over! Score: %i' % score)
+        reward -= 100
+        save_model(save_path)
+
+        pygame.quit()
+        return score
+
+    return main
 
 def map_bird_area(rect, display_surface):
     bird_x, bird_y, bird_w, bird_h = (rect)
@@ -449,7 +445,6 @@ def map_bird_area(rect, display_surface):
     bird_rect = Rect(bird_x, bird_y, bird_w, bird_h)
 
     return display_surface.subsurface(bird_rect)
-
 
 def flappy_bird_model():
     # The input of the first layer corresponds to

@@ -53,6 +53,52 @@ class DQN(nn.Module):
         x = F.relu(self.fc2(x))
         return x
 
+######################################################################
+# Replay Memory
+# -------------
+#
+# We'll be using experience replay memory for training our DQN. It stores
+# the transitions that the agent observes, allowing us to reuse this data
+# later. By sampling from it randomly, the transitions that build up a
+# batch are decorrelated. It has been shown that this greatly stabilizes
+# and improves the DQN training procedure.
+#
+# For this, we're going to need two classses:
+#
+# - Transition - representing a single transition in our environment
+# - ReplayMemory - a cyclic buffer of bounded size that holds the
+#    transitions observed recently. It also implements a .sample()
+#    method for selecting a random batch of transitions for training.
+######################################################################
+
+class Transition(object):
+    def __init__(self,state, action, next_state, reward):
+        self.state = state
+        self.action = action
+        self.next_state = next_state
+        self.reward = reward
+
+
+class ReplayMemory(object):
+
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.memory = []
+        self.position = 0
+
+    def push(self, *args):
+        """Saves a transition."""
+        if len(self.memory) < self.capacity:
+            self.memory.append(None)
+        self.memory[self.position] = Transition(*args)
+        self.position = (self.position + 1) % self.capacity
+
+    def sample(self, batch_size):
+        return random.sample(self.memory, batch_size)
+
+    def __len__(self):
+        return len(self.memory)
+
 def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSprop', **kwargs):
 	
     BATCH_SIZE  = kwargs.get("BATCH_SIZE",128)
@@ -61,6 +107,7 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
     EPS_END     = kwargs.get("EPS_END", 0.05)
     EPS_DECAY   = kwargs.get("EPS_DECAY", 200)
     path        = kwargs.get("path", None)
+    memory      = kwargs.get("memory", ReplayMemory(10000))
     
     dqn = DQN(actions, shape, fully_connected)
 
@@ -68,10 +115,11 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
 	
     optimizer = opt[opt_](dqn.parameters(), lr=learning_rate)
     steps_done = 0
-    
+    last_sync = 0
+
     def select_greddy_action(state):
         nonlocal steps_done
-        
+
         sample = random.random()
 
         eps_threshold = EPS_END + (EPS_START - EPS_END) * \
@@ -91,7 +139,37 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
         pyautogui.press(possible_actions[action])
 
     def optimize():
-        pass
+        nonlocal last_sync
+
+        if len(memory) < BATCH_SIZE:
+            return
+
+        transitions = memory.sample(BATCH_SIZE)
+        batch = Transition(*zip(*transitions))
+        
+        non_final_mask = torch.ByteTensor(tuple(map(lambda s: s is not None, batch.next_state)))
+        non_final_next_states = Variable(torch.cat([s for s in batch.next_state if s is not None]),volatile=True)
+
+        state_batch = Variable(torch.cat(batch.state))
+        action_batch = Variable(torch.cat(batch.action))
+        reward_batch = Variable(torch.cat(batch.reward))
+
+        state_action_values = model(state_batch).gather(1, action_batch)
+        next_state_values = Variable(torch.zeros(BATCH_SIZE))
+        next_state_values[non_final_mask] = model(non_final_next_states).max(1)[0]
+
+        next_state_values.volatile = False
+
+        expected_state_action_values = (next_state_values * GAMMA) + reward_batch
+
+        loss = F.smooth_l1_loss(state_action_values, expected_state_action_values)
+
+        optimizer.zero_grad()
+        loss.backward()
+        
+        for param in model.parameters():
+            param.grad.data.clamp_(-1, 1)
+        optimizer.step()
 
     def save_model(path):
         if path: torch.save(dqn.state_dict(),path)
@@ -99,5 +177,8 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
     def load_model(path): 
         dqn.load_state_dict(torch.load(path))
 
-    return select_greddy_action, perform_action, optimize, save_model
+    def push_to_memory(*args):
+        memory.push(*args)
+
+    return push_to_memory, select_greddy_action, perform_action, optimize, save_model
 	

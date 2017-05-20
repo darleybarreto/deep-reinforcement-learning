@@ -14,9 +14,11 @@ if __name__ == '__main__':
 	episodes = 5000
 	shape, fully_connected, actions = flappybird.flappy_bird_model()
 
+	flappybird_main = flappybird.init_main(save_dqn_path, create_model(actions, shape, fully_connected, path=save_dqn_path))
+	
 	while episode < episodes:
 		print("Beginning episode #%s"%episodes)
-		score = flappybird.main(save_dqn_path, create_model(actions, shape, fully_connected, path=save_dqn_path))
+		score = flappybird_main()
 		episode += 1
 		# txt.write(score + " ")
 

@@ -312,11 +312,14 @@ def init_main(save_path, model, train=True):
     example), this function is called.
     """
     push_to_memory, select_action, perform_action, optimize, save_model = model
-    reward = 0
-    reward_alive = 0.1
+    
     reward_dead = 0
-
+    reward_alive = 0
+    
     def main():
+        nonlocal reward_dead
+        nonlocal reward_alive
+
         pygame.init()
 
         display_surface = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
@@ -334,9 +337,10 @@ def init_main(save_path, model, train=True):
         pipes = deque()
 
         frame_clock = 0  # this counter is only incremented if the game isn't paused
-        past_score = 0
         score = 0
-
+        
+        reward = 0
+        
         done = paused = False
 
         bird_area = map_bird_area(bird.rect, display_surface)
@@ -393,19 +397,18 @@ def init_main(save_path, model, train=True):
 
             # ---------------  Train  ---------------
             bird_area = map_bird_area(bird.rect, display_surface)
-            
-            past_score = int(score)
-            
+            # pygame.image.save(bird_area, "screenshot.jpg")
             reward_alive += 0.1
-            reward += reward_alive + score
+            reward += reward_alive + score + reward_dead
 
-            x_t = extract_image(pygame.surfarray.array3d(bird_area),(80,80))
+            x_t = extract_image(pygame.surfarray.array3d(display_surface),(80,80))
+            x_t = np.reshape(x_t, (80, 80, 1))
             st = np.append(x_t, stack_x[:, :, :3], axis=2)
 
             if train:
-                action = train_and_play(st, select_action, possible_actions, optimize)
+                action = train_and_play(st, select_action, perform_action, possible_actions, optimize)
             else:
-                action = play(st, select_action, possible_actions)
+                action = play(st, select_action, perform_action, possible_actions)
 
             push_to_memory(stack_x, action, st, reward)
             stack_x = st
@@ -431,19 +434,18 @@ def init_main(save_path, model, train=True):
 
 def map_bird_area(rect, display_surface):
     bird_x, bird_y, bird_w, bird_h = (rect)
-    
+
     if bird_x < 140:
-        bird_x = int(bird_x) - (int(bird_x) % 10)
+        bird_x = int(bird_x + bird_w) - (int(bird_x + bird_w) % 10) + 60
     else:
-        bird_x = int(bird_x) - (int(bird_x) % 70)
+        bird_x = int(bird_x + bird_w) - (int(bird_x + bird_w) % 70) + 8
 
     if bird_y < 180:
-        bird_y = int(bird_y) - (int(bird_y) % 10)
+        bird_y = int(bird_y + bird_h) - (int(bird_y + bird_h) % 10) - 30
     else:
-        bird_y = int(bird_y) - (int(bird_y) % 60)
+        bird_y = int(bird_y + bird_h) - (int(bird_y + bird_h) % 60) - 50
 
-    bird_rect = Rect(bird_x, bird_y, bird_w, bird_h)
-
+    bird_rect = Rect(bird_x, bird_y, bird_x, bird_y)
     return display_surface.subsurface(bird_rect)
 
 def flappy_bird_model():

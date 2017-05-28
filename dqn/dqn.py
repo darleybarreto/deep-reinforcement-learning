@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
+from collections import namedtuple
 
 opt =   {
             "Adam": torch.optim.Adam,\
@@ -23,6 +24,15 @@ class DQN(nn.Module):
         # That makes perfectly sense for a classification task like ImageNet.
         # But for games the location of an object is crucial in determining the potential reward
 
+        # The BatchNorm layer immediately after fully connected layers (or convolutional layers), and before non-linearities.
+        # It has become a very common practice to use Batch Normalization in neural networks. 
+        # In practice networks that use Batch Normalization are significantly more robust to bad initialization. 
+        # Additionally, batch normalization can be interpreted as doing preprocessing at every layer of the network, 
+        # but integrated into the network itself in a differentiable manner
+        # 
+        # Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift paper
+        # https://arxiv.org/abs/1502.03167
+        
         in_, out_, kernel, stride = (list(zip(*shape))[i] for i in range(len(shape) + 1))
         
         self.layer1 = nn.Sequential(
@@ -44,10 +54,17 @@ class DQN(nn.Module):
         self.fc2 = nn.Linear(fc[1], actions)
     
     def forward(self, x):
+        print("At forward method",x.size())
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
-
+        
+        # x.size(0) get the 0 component of its size
+        # x.view() is basically to reshape the tensor
+        # the -1 means that for a given number of rows
+        # we want to Pytorch find the best number of columns
+        # that fits our data
+        
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
@@ -71,13 +88,8 @@ class DQN(nn.Module):
 #    method for selecting a random batch of transitions for training.
 ######################################################################
 
-class Transition(object):
-    def __init__(self,state, action, next_state, reward):
-        self.state = state
-        self.action = action
-        self.next_state = next_state
-        self.reward = reward
-
+Transition = namedtuple('Transition',
+                        ('state', 'action', 'next_state', 'reward'))
 
 class ReplayMemory(object):
 
@@ -90,7 +102,13 @@ class ReplayMemory(object):
         """Saves a transition."""
         if len(self.memory) < self.capacity:
             self.memory.append(None)
-        self.memory[self.position] = Transition(*args)
+        [stack_x, action, st, reward] = args
+
+        self.memory[self.position] = Transition(*[torch.from_numpy(stack_x), \
+                                                action,\
+                                                torch.from_numpy(st),\
+                                                torch.Tensor([reward])])
+
         self.position = (self.position + 1) % self.capacity
 
     def sample(self, batch_size):
@@ -128,47 +146,68 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
         
         if sample > eps_threshold:
             state = torch.from_numpy(state).float().unsqueeze(0)
-            probs = dqn(Variable(state))
-            # action = probs.multinomial()
-            return action.data.max(1)[1].cpu() # get the index of the max log-probability
+            probs = dqn(Variable(state, volatile=True))
+            
+            return probs.data.max(1)[1].cpu() # get the index of the max log-probability
 
         else:
-            return torch.IntTensor([[random.randrange(actions)]])
+            return torch.LongTensor([[random.randrange(actions)]])
 
     def perform_action(possible_actions, action):
         pyautogui.press(possible_actions[action])
 
     def optimize():
+        ### Perform experience replay and train the network.
         nonlocal last_sync
 
         if len(memory) < BATCH_SIZE:
             return
 
         transitions = memory.sample(BATCH_SIZE)
-        batch = Transition(*zip(*transitions))
+        # Use the replay buffer to sample a batch of transitions
         
-        non_final_mask = torch.ByteTensor(tuple(map(lambda s: s is not None, batch.next_state)))
-        non_final_next_states = Variable(torch.cat([s for s in batch.next_state if s is not None]),volatile=True)
-
+        batch = Transition(*zip(*transitions))
+        # batch.state is a tuple of states
+        # batch.action is a tuple os actions
+        # batch.reward is a tuple of rewards
         state_batch = Variable(torch.cat(batch.state))
         action_batch = Variable(torch.cat(batch.action))
         reward_batch = Variable(torch.cat(batch.reward))
-
-        state_action_values = model(state_batch).gather(1, action_batch)
+        
+        non_final_mask = torch.ByteTensor(tuple(map(lambda s: s is not None, batch.next_state)))
+        
+        non_final_next_states = Variable(torch.cat([s for s in batch.next_state if s is not None]),volatile=True)
+        
+        state_batch = state_batch.view(1, *state_batch.size())
+        
+        # Compute current Q value, takes only state and output value for every state-action pair
+        # We choose Q based on action taken.
+        state_action_values = dqn(state_batch).gather(1, action_batch)
+        # Compute next Q value based on which action gives max Q values
         next_state_values = Variable(torch.zeros(BATCH_SIZE))
-        next_state_values[non_final_mask] = model(non_final_next_states).max(1)[0]
+        next_state_values[non_final_mask] = dqn(non_final_next_states).max(1)[0]
 
         next_state_values.volatile = False
-
+        # Compute the target of the current Q values
         expected_state_action_values = (next_state_values * GAMMA) + reward_batch
 
+        # same as SmoothL1Loss
+        # Creates a criterion that uses a squared term if 
+        # the absolute element-wise error falls below 1 and an L1 term otherwise.
         loss = F.smooth_l1_loss(state_action_values, expected_state_action_values)
 
+        # Clears the gradients of all optimized Variable
         optimizer.zero_grad()
+
+        # Use autograd to compute the backward pass. This call will compute the
+        # gradient of loss with respect to all Variables with requires_grad=True.
+        # After this call w1.grad and w2.grad will be Variables holding the gradient
+        # of the loss with respect to w1 and w2 respectively.
         loss.backward()
         
-        for param in model.parameters():
+        for param in dqn.parameters():
             param.grad.data.clamp_(-1, 1)
+            
         optimizer.step()
 
     def save_model(path):

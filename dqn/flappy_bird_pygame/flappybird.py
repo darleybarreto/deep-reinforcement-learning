@@ -14,7 +14,7 @@ from pygame.locals import *
 from util import *
 
 FPS = 60
-ANIMATION_SPEED = 0.1   # pixels per millisecond
+ANIMATION_SPEED = 1   # pixels per millisecond
 WIN_WIDTH = 288         # BG image size: 288x512 px
 WIN_HEIGHT = 512
 possible_actions = {0: "up", 1: ""}
@@ -343,13 +343,14 @@ def init_main(save_path, model, train=True):
         
         done = paused = False
 
-        bird_area = map_bird_area(bird.rect, display_surface)
+        # bird_area = map_bird_area(bird.rect, display_surface)
 
         x_t = extract_image(pygame.surfarray.array3d(display_surface),(80,80))
 
-        stack_x = np.stack((x_t, x_t, x_t, x_t), axis=2)
+        stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
 
         while not done:
+
             clock.tick(FPS)
             # pygame.image.save(display_surface, os.getcwd() + '/image_'+ str(int(time.time())) + '_.png')
             # Handle this 'manually'.  If we used pygame.time.set_timer(),
@@ -396,15 +397,17 @@ def init_main(save_path, model, train=True):
                     p.score_counted = True
 
             # ---------------  Train  ---------------
-            bird_area = map_bird_area(bird.rect, display_surface)
+            # bird_area = map_bird_area(bird.rect, display_surface)
             # pygame.image.save(bird_area, "screenshot.jpg")
             reward_alive += 0.1
             reward += reward_alive + score + reward_dead
 
             x_t = extract_image(pygame.surfarray.array3d(display_surface),(80,80))
-            x_t = np.reshape(x_t, (80, 80, 1))
-            st = np.append(x_t, stack_x[:, :, :3], axis=2)
+            
+            x_t = np.reshape(x_t, (1, 80, 80))
 
+            st = np.append(stack_x[:3, :, :], x_t, axis=0)
+            
             if train:
                 action = train_and_play(st, select_action, perform_action, possible_actions, optimize)
             else:
@@ -423,30 +426,28 @@ def init_main(save_path, model, train=True):
             pygame.display.flip()
             frame_clock += 1
 
-        print('Game over! Score: %i' % score)
-        reward -= 100
-        save_model(save_path)
+        # print('Game over! Score: %i' % score)
+        # reward -= 100
+        # save_model(save_path)
 
         pygame.quit()
         return score
 
     return main
 
-def map_bird_area(rect, display_surface):
-    bird_x, bird_y, bird_w, bird_h = (rect)
+# def map_bird_area(rect, display_surface):
+#     bird_x, bird_y, bird_w, bird_h = (rect)
 
-    if bird_x < 140:
-        bird_x = int(bird_x + bird_w) - (int(bird_x + bird_w) % 10) + 60
-    else:
-        bird_x = int(bird_x + bird_w) - (int(bird_x + bird_w) % 70) + 8
+#     bird_x = int(bird_x + bird_w) - (int(bird_x + bird_w) % 10) + 60
 
-    if bird_y < 180:
-        bird_y = int(bird_y + bird_h) - (int(bird_y + bird_h) % 10) - 30
-    else:
-        bird_y = int(bird_y + bird_h) - (int(bird_y + bird_h) % 60) - 50
+#     if bird_y < 180:
+#         bird_y = int(bird_y + bird_h) - (int(bird_y + bird_h) % 10) - 8
+#     else:
+#         bird_y = int(bird_y + bird_h) - (int(bird_y + bird_h) % 60) - 10
 
-    bird_rect = Rect(bird_x, bird_y, bird_x, bird_y)
-    return display_surface.subsurface(bird_rect)
+#     bird_rect = Rect(bird_x, bird_y, bird_w, bird_h)
+#     print(bird_rect, display_surface)
+#     return display_surface.subsurface(bird_rect)
 
 def flappy_bird_model():
     # The input of the first layer corresponds to
@@ -457,7 +458,7 @@ def flappy_bird_model():
                 [64,64,3,1],      # third layer
             ]
 
-    fully_connected = [1600,512]
+    fully_connected = [2304,512]
 
     return shape, fully_connected, len(possible_actions)
 

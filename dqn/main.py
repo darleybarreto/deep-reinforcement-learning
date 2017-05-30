@@ -20,7 +20,6 @@ if __name__ == '__main__':
 		print("Beginning episode #%s"%episode)
 		score = flappybird_main()
 		episode += 1
-		break
 		# txt.write(score + " ")
 
 	# txt.close() 

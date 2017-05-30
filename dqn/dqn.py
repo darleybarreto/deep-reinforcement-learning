@@ -54,11 +54,9 @@ class DQN(nn.Module):
         self.fc2 = nn.Linear(fc[1], actions)
     
     def forward(self, x):
-        print("At forward method",x.size())
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
-        
         # x.size(0) get the 0 component of its size
         # x.view() is basically to reshape the tensor
         # the -1 means that for a given number of rows
@@ -103,10 +101,13 @@ class ReplayMemory(object):
         if len(self.memory) < self.capacity:
             self.memory.append(None)
         [stack_x, action, st, reward] = args
-
-        self.memory[self.position] = Transition(*[torch.from_numpy(stack_x), \
+        
+        stack_x = torch.from_numpy(stack_x.astype(float).reshape((1, *stack_x.shape)))
+        st = torch.from_numpy(st.astype(float).reshape(1, *st.shape))
+        
+        self.memory[self.position] = Transition(*[stack_x, \
                                                 action,\
-                                                torch.from_numpy(st),\
+                                                st,\
                                                 torch.Tensor([reward])])
 
         self.position = (self.position + 1) % self.capacity
@@ -154,6 +155,7 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
             return torch.LongTensor([[random.randrange(actions)]])
 
     def perform_action(possible_actions, action):
+
         pyautogui.press(possible_actions[action])
 
     def optimize():
@@ -167,19 +169,19 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
         # Use the replay buffer to sample a batch of transitions
         
         batch = Transition(*zip(*transitions))
+
         # batch.state is a tuple of states
         # batch.action is a tuple os actions
         # batch.reward is a tuple of rewards
-        state_batch = Variable(torch.cat(batch.state))
-        action_batch = Variable(torch.cat(batch.action))
-        reward_batch = Variable(torch.cat(batch.reward))
+        
+        state_batch = Variable(torch.cat(batch.state)).float()
+        action_batch = Variable(torch.cat(batch.action)).long()
+        reward_batch = Variable(torch.cat(batch.reward)).float()
         
         non_final_mask = torch.ByteTensor(tuple(map(lambda s: s is not None, batch.next_state)))
         
-        non_final_next_states = Variable(torch.cat([s for s in batch.next_state if s is not None]),volatile=True)
-        
-        state_batch = state_batch.view(1, *state_batch.size())
-        
+        non_final_next_states = Variable(torch.cat([s for s in batch.next_state if s is not None]),volatile=True).float()
+        # print(type(non_final_next_states.data))
         # Compute current Q value, takes only state and output value for every state-action pair
         # We choose Q based on action taken.
         state_action_values = dqn(state_batch).gather(1, action_batch)
@@ -204,11 +206,13 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
         # After this call w1.grad and w2.grad will be Variables holding the gradient
         # of the loss with respect to w1 and w2 respectively.
         loss.backward()
-        
+
+        #Clamps the gradients to (-1,1) in-place 
         for param in dqn.parameters():
             param.grad.data.clamp_(-1, 1)
             
         optimizer.step()
+        print(len(memory))
 
     def save_model(path):
         if path: torch.save(dqn.state_dict(),path)

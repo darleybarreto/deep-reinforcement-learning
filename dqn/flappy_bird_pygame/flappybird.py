@@ -14,7 +14,7 @@ from pygame.locals import *
 from util import *
 
 FPS = 60
-ANIMATION_SPEED = 1   # pixels per millisecond
+ANIMATION_SPEED = 1.5   # pixels per millisecond
 WIN_WIDTH = 288         # BG image size: 288x512 px
 WIN_HEIGHT = 512
 possible_actions = {0: "up", 1: ""}
@@ -157,7 +157,7 @@ class PipePair(pygame.sprite.Sprite):
 
     WIDTH = 80
     PIECE_HEIGHT = 32
-    ADD_INTERVAL = 3000
+    ADD_INTERVAL = 1
 
     def __init__(self, pipe_end_img, pipe_body_img):
         """Initialises a new random PipePair.
@@ -348,13 +348,14 @@ def init_main(save_path, model, train=True):
         x_t = extract_image(pygame.surfarray.array3d(display_surface),(80,80))
 
         stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
-
+        
         while not done:
 
             clock.tick(FPS)
             # pygame.image.save(display_surface, os.getcwd() + '/image_'+ str(int(time.time())) + '_.png')
             # Handle this 'manually'.  If we used pygame.time.set_timer(),
             # pipe addition would be messed up when paused.
+
             if not (paused or frame_clock % msec_to_frames(PipePair.ADD_INTERVAL)):
                 pp = PipePair(images['pipe-end'], images['pipe-body'])
                 pipes.append(pp)
@@ -397,8 +398,6 @@ def init_main(save_path, model, train=True):
                     p.score_counted = True
 
             # ---------------  Train  ---------------
-            # bird_area = map_bird_area(bird.rect, display_surface)
-            # pygame.image.save(bird_area, "screenshot.jpg")
             reward_alive += 0.1
             reward += reward_alive + score + reward_dead
 
@@ -407,13 +406,15 @@ def init_main(save_path, model, train=True):
             x_t = np.reshape(x_t, (1, 80, 80))
 
             st = np.append(stack_x[:3, :, :], x_t, axis=0)
-            
+                        
             if train:
                 action = train_and_play(st, select_action, perform_action, possible_actions, optimize)
+                # push_to_memory(stack_x, action, st, reward)
+            
             else:
-                action = play(st, select_action, perform_action, possible_actions)
+                play(st, select_action, perform_action, possible_actions)
 
-            push_to_memory(stack_x, action, st, reward)
+            
             stack_x = st
 
             # ---------------  Train  ---------------

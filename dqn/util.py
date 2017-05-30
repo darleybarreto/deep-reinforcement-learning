@@ -16,7 +16,6 @@ def extract_image(image_data, size):
 
 def play(state, select_action, perform_action, possible_actions):
     action = select_action(state)
-    # print(action)
     perform_action(possible_actions, action[0][0])
     return action
 

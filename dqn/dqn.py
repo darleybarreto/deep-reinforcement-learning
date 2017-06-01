@@ -212,7 +212,6 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
             param.grad.data.clamp_(-1, 1)
             
         optimizer.step()
-        print(len(memory))
 
     def save_model(path):
         if path: torch.save(dqn.state_dict(),path)

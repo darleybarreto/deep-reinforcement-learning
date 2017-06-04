@@ -14,12 +14,12 @@ def extract_image(image_data, size):
     _, x_t = cv2.threshold(x_t,50,255,cv2.THRESH_BINARY)
     return x_t
 
-def play(state, select_action, perform_action, possible_actions):
+def play(f_action, state, select_action, perform_action, possible_actions):
     action = select_action(state)
-    perform_action(possible_actions, action[0][0])
+    perform_action(f_action, possible_actions, action[0][0])
     return action
 
-def train_and_play(state, select_action, perform_action, possible_actions, optimize):
-    action = play(state, select_action, perform_action, possible_actions)
+def train_and_play(f_action, state, select_action, perform_action, possible_actions, optimize):
+    action = play(f_action, state, select_action, perform_action, possible_actions)
     optimize()
     return action

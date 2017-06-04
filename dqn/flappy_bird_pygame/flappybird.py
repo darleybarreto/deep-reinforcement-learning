@@ -17,7 +17,7 @@ FPS = 30
 ANIMATION_SPEED = 1.
 WIN_WIDTH = 288         # BG image size: 288x512 px
 WIN_HEIGHT = 512
-possible_actions = {0: "up", 1: ""}
+possible_actions = {0: [MOUSEBUTTONUP, KEYUP, K_UP, K_RETURN, K_SPACE], 1: []}
 
 class Bird(pygame.sprite.Sprite):
     """Represents the bird controlled by the player.
@@ -408,7 +408,7 @@ def init_main(save_path, model, train=True):
             st = np.append(stack_x[:3, :, :], x_t, axis=0)
                         
             if train:
-                action = train_and_play(st, select_action, perform_action, possible_actions, optimize)
+                action = train_and_play(flappy_bird_action, st, select_action, perform_action, possible_actions, optimize)
                 push_to_memory(stack_x, action, st, reward)
             
             else:
@@ -462,6 +462,17 @@ def flappy_bird_model():
     fully_connected = [2304,512]
 
     return shape, fully_connected, len(possible_actions)
+
+def flappy_bird_action(actions):
+    if MOUSEBUTTONUP in actions:
+        return pygame.event.post(pygame.event.Event(MOUSEBUTTONUP))
+    
+    if KEYUP in actions:
+        return pygame.event.post(pygame.event.Event(KEYUP))
+
+    for a in actions:
+        if a in (K_UP, K_RETURN, K_SPACE):
+            return pygame.event.post(pygame.event.Event(KEYUP))
 
 if __name__ == '__main__':
     # If this module had been imported, __name__ would be 'flappybird'.

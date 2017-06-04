@@ -6,7 +6,7 @@ import os
 if __name__ == '__main__':
 
 	save_dqn_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'saved_files', 'dqn_model.pickle')
-	save_txt_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'saved_files', 'socres.txt')
+	save_txt_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'saved_files', 'scores.txt')
 	load_dqn_path = None
 	# save_txt_path = None
 	txt = open(save_txt_path,"w")

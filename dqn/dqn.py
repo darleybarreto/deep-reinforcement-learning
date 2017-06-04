@@ -1,6 +1,5 @@
 import math
 import random
-import pyautogui
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -157,9 +156,9 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
         else:
             return torch.LongTensor([[random.randrange(actions)]])
 
-    def perform_action(possible_actions, action):
-
-        pyautogui.press(possible_actions[action])
+    def perform_action(f_action, possible_actions, action):
+        f_action(possible_actions[action])
+        # pyautogui.press(possible_actions[action])
 
     def optimize():
         ### Perform experience replay and train the network.

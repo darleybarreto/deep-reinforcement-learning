@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
 from collections import namedtuple
+# from torchvision.utils import save_image
 
 opt =   {
             "Adam": torch.optim.Adam,\
@@ -57,13 +58,15 @@ class DQN(nn.Module):
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
+        # save_image(x.data,"3_conv.png")
+
         # x.size(0) get the 0 component of its size
         # x.view() is basically to reshape the tensor
         # the -1 means that for a given number of rows
         # we want to Pytorch find the best number of columns
         # that fits our data
-        
         x = x.view(x.size(0), -1)
+        
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         return x
@@ -120,7 +123,7 @@ class ReplayMemory(object):
 
 def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSprop', **kwargs):
 	
-    BATCH_SIZE  = kwargs.get("BATCH_SIZE",128)
+    BATCH_SIZE  = kwargs.get("BATCH_SIZE",64)
     GAMMA       = kwargs.get("GAMMA", 0.999)
     EPS_START   = kwargs.get("EPS_START", 0.9)
     EPS_END     = kwargs.get("EPS_END", 0.05)
@@ -130,7 +133,7 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
     
     dqn = DQN(actions, shape, fully_connected)
 
-    if path: load_model(path)
+    if path: dqn.load_state_dict(torch.load(path))
 	
     optimizer = opt[opt_](dqn.parameters(), lr=learning_rate)
     steps_done = 0
@@ -184,6 +187,7 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
         # print(type(non_final_next_states.data))
         # Compute current Q value, takes only state and output value for every state-action pair
         # We choose Q based on action taken.
+        # save_image(state_batch.data,"before_conv.png")
         state_action_values = dqn(state_batch).gather(1, action_batch)
         # Compute next Q value based on which action gives max Q values
         next_state_values = Variable(torch.zeros(BATCH_SIZE))
@@ -215,10 +219,7 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
 
     def save_model(path):
         if path: torch.save(dqn.state_dict(),path)
-
-    def load_model(path): 
-        dqn.load_state_dict(torch.load(path))
-
+ 
     def push_to_memory(*args):
         memory.push(*args)
 

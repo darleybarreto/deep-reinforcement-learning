@@ -159,7 +159,7 @@ class PipePair(pygame.sprite.Sprite):
 
     WIDTH = 80
     PIECE_HEIGHT = 32
-    ADD_INTERVAL = 200
+    ADD_INTERVAL = 500
 
     def __init__(self, pipe_end_img, pipe_body_img):
         """Initialises a new random PipePair.
@@ -429,7 +429,7 @@ def init_main(save_path, model, train=True):
 
         # print('Game over! Score: %i' % score)
         # reward -= 100
-        # save_model(save_path)
+        save_model(save_path)
 
         pygame.quit()
         return score

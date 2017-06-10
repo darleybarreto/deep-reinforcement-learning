@@ -16,10 +16,10 @@ def extract_image(image_data, size):
 
 def play(f_action, state, select_action, perform_action, possible_actions):
     action = select_action(state)
-    perform_action(f_action, possible_actions, action[0][0])
-    return action
+    reward = perform_action(f_action, possible_actions, action[0][0])
+    return reward, action
 
 def train_and_play(f_action, state, select_action, perform_action, possible_actions, optimize):
-    action = play(f_action, state, select_action, perform_action, possible_actions)
+    reward, action = play(f_action, state, select_action, perform_action, possible_actions)
     optimize()
-    return action
+    return reward, action

@@ -14,7 +14,8 @@ from pygame.locals import *
 from util import *
 
 FPS = 30
-ANIMATION_SPEED = 1.
+ANIMATION_SPEED = 0.8  # pixels per millisecond
+# ANIMATION_SPEED = 0.8
 WIN_WIDTH = 288         # BG image size: 288x512 px
 WIN_HEIGHT = 512
 possible_actions = {0: [MOUSEBUTTONUP, KEYUP, K_UP, K_RETURN, K_SPACE], 1: []}
@@ -46,9 +47,9 @@ class Bird(pygame.sprite.Sprite):
     """
 
     WIDTH = HEIGHT = 32
-    SINK_SPEED = 0.18
-    CLIMB_SPEED = 0.22
-    CLIMB_DURATION = 533.3
+    SINK_SPEED = 0.1
+    CLIMB_SPEED = 0.3
+    CLIMB_DURATION = 333.3
     # CLIMB_SPEED = 1
     # CLIMB_DURATION = 1
 
@@ -159,7 +160,7 @@ class PipePair(pygame.sprite.Sprite):
 
     WIDTH = 80
     PIECE_HEIGHT = 32
-    ADD_INTERVAL = 500
+    ADD_INTERVAL = 3000
 
     def __init__(self, pipe_end_img, pipe_body_img):
         """Initialises a new random PipePair.
@@ -314,12 +315,10 @@ def init_main(save_path, model, train=True):
     example), this function is called.
     """
     push_to_memory, select_action, perform_action, optimize, save_model = model
-    
-    reward_dead = 0
+
     reward_alive = 0
     
     def main():
-        nonlocal reward_dead
         nonlocal reward_alive
 
         pygame.init()
@@ -399,7 +398,7 @@ def init_main(save_path, model, train=True):
 
             # ---------------  Train  ---------------
             reward_alive += 0.1
-            reward += reward_alive + score + reward_dead
+            reward += reward_alive + score
 
             x_t = extract_image(pygame.surfarray.array3d(display_surface),(80,80))
             
@@ -408,11 +407,11 @@ def init_main(save_path, model, train=True):
             st = np.append(stack_x[:3, :, :], x_t, axis=0)
                         
             if train:
-                action = train_and_play(flappy_bird_action, st, select_action, perform_action, possible_actions, optimize)
+                _, action = train_and_play(flappy_bird_action, st, select_action, perform_action, possible_actions, optimize)
                 push_to_memory(stack_x, action, st, reward)
             
             else:
-                play(st, select_action, perform_action, possible_actions)
+                play(flappy_bird_action, st, select_action, perform_action, possible_actions)
 
             
             stack_x = st
@@ -428,7 +427,7 @@ def init_main(save_path, model, train=True):
             frame_clock += 1
 
         # print('Game over! Score: %i' % score)
-        # reward -= 100
+        reward -= 10
         save_model(save_path)
 
         pygame.quit()
@@ -465,14 +464,17 @@ def flappy_bird_model():
 
 def flappy_bird_action(actions):
     if MOUSEBUTTONUP in actions:
-        return pygame.event.post(pygame.event.Event(MOUSEBUTTONUP))
-    
+        pygame.event.post(pygame.event.Event(MOUSEBUTTONUP))
+        return
+
     if KEYUP in actions:
-        return pygame.event.post(pygame.event.Event(KEYUP))
+        pygame.event.post(pygame.event.Event(KEYUP))
+        return
 
     for a in actions:
         if a in (K_UP, K_RETURN, K_SPACE):
-            return pygame.event.post(pygame.event.Event(KEYUP))
+            pygame.event.post(pygame.event.Event(KEYUP))
+            return
 
 if __name__ == '__main__':
     # If this module had been imported, __name__ would be 'flappybird'.

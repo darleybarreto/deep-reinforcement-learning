@@ -3,13 +3,12 @@ These algorithms are most assignments for the Deep Reinforcement Learning course
 
 ## Content
 This repo has the base algorithms and some games as well.
-At the moment, it contains 2048 and Flappy Bird.
+At the moment, it some PLE games such as: Flappy Bird, Pong, Catcher, Water World, Snake, PuckWorld, PixelCopter.
 
 ## Usage
 You must install numpy for running the algorithms.
 As for the games:
-1. 2048: install pyautogui
-2. Flappy Bird: install pyautogui, pygame, cv2, pytorch
+1. PLE Games: install pygame, cv2, pytorch
 
 ## Contributing
 
@@ -22,5 +21,5 @@ As for the games:
 
 ## Credits
 
-1. For the 2048 source code: https://github.com/yangshun/2048-python
-2. For the Flappy Bird source code: https://github.com/TimoWilken/flappy-bird-pygame
+1. For the games: https://github.com/ntasfi/PyGame-Learning-Environment
+2. The code was based on the tutorial: http://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html

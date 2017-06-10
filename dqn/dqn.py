@@ -146,7 +146,7 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
         eps_threshold = EPS_END + (EPS_START - EPS_END) * \
             math.exp(-1. * steps_done / EPS_DECAY)
         steps_done += 1
-        
+
         if sample > eps_threshold:
             state = torch.from_numpy(state).float().unsqueeze(0)
             probs = dqn(Variable(state, volatile=True))
@@ -157,8 +157,8 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
             return torch.LongTensor([[random.randrange(actions)]])
 
     def perform_action(f_action, possible_actions, action):
-        f_action(possible_actions[action])
-        # pyautogui.press(possible_actions[action])
+        # reward
+        return f_action(possible_actions[action])
 
     def optimize():
         ### Perform experience replay and train the network.

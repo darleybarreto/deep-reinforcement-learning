@@ -7,19 +7,18 @@ sys.path.insert(0,'../..')
 from utils import menu
 
 def train_test(opt, model, save_dqn, load_dqn, save_txt_path, **kwargs):
-	txt = open(save_txt_path,"w")
+	
+	shape, fully_connected, actions = model[1].build_model()
+	dqn = create_model(actions, shape, fully_connected, path=load_dqn)
+	episodes = float(kwargs.get("episodes",5000))
+	observations = float(kwargs.get("step",100))	
 	
 	if opt == "train":
-		show_display = kwargs.get("display", False)
-		episodes = float(kwargs.get("episodes",5000))
-		observations = float(kwargs.get("step",100))
+		txt = open(save_txt_path,kwargs.get("access_scores", "w"))
 
-		shape, fully_connected, actions = model[1].build_model()
-		dqn = create_model(actions, shape, fully_connected, path=load_dqn)
-		
+		show_display = kwargs.get("display", False)
 		game_main = model[1].init_main(save_dqn, dqn, observations,display=show_display)
-		
-		# while episode < episodes:
+
 		if episodes == float("inf"):
 			while True:
 				print("Beginning episode #%s"%episode)
@@ -31,11 +30,20 @@ def train_test(opt, model, save_dqn, load_dqn, save_txt_path, **kwargs):
 				# print("Beginning episode #%s"%episode)
 				score = game_main()
 				txt.write(str(score) + " ")
+		
+		txt.close()
 
-	elif opt == "test":
-		pass
+	elif opt == "test":	
+		
+		game_main = model[1].init_main(save_dqn, dqn, observations,train=False,display=True)
+		episode = 0 
+		
+		while episode < episodes:
+			episode += 1
+			print("Beginning episode #%s"%episode)
+			score = game_main()
+			print("Ending episode with score:",score)
 
-	txt.close()
 
 def main(game, opt, **kwargs):
 	save_dqn_path = game[0] + "_dqn_model.pickle"

@@ -56,7 +56,7 @@ def init_main(save_path, model, steps, train=True, display=False):
             play(flappy_bird_action, st, select_action, perform_action, possible_actions)
                         
             if train:
-                r, action = train_and_play(flappy_bird_action, st, select_action, perform_action, possible_actions, optimize)
+                r, action, _, _ = train_and_play(flappy_bird_action, st, select_action, perform_action, possible_actions, optimize)
                 reward += r
                 push_to_memory(stack_x, action, st, reward)
             

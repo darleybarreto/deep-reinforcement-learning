@@ -50,7 +50,7 @@ def init_main(save_path, model, steps, train=True, display=False):
             st = np.append(stack_x[1:4, :, :], x_t, axis=0)
                         
             if train:
-                r, action = train_and_play(flappy_bird_action, st, select_action, perform_action, possible_actions, optimize)
+                r, action, _, _ = train_and_play(flappy_bird_action, st, select_action, perform_action, possible_actions, optimize)
                 reward += r
                 push_to_memory(stack_x, action, st, reward)
             
@@ -67,6 +67,66 @@ def init_main(save_path, model, steps, train=True, display=False):
 
     return main
 
+
+def a3c_main(save_path, shared_model, model, steps, train=True, display=False):
+    fps = 30  # fps we want to run at
+    frame_skip = 2
+    num_steps = 1
+    force_fps = False  # slower speed
+    
+    game = Catcher(width=256, height=256)
+    
+    p = PLE(game, fps=fps, frame_skip=frame_skip, num_steps=num_steps,
+        force_fps=force_fps, display_screen=display)
+
+    p.init()
+
+    def flappy_bird_action(action):
+        # reward, action
+        return p.act(action)
+    
+    def main():
+        nonlocal steps
+
+        reward = 0
+        stp = 0
+        x_t = extract_image(p.getScreenRGB(),(80,80))
+
+        stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
+        model.load_state_dict(shared_model.state_dict())
+
+        cx = Variable(torch.zeros(1, 256), volatile=True)
+        hx = Variable(torch.zeros(1, 256), volatile=True)
+
+        while p.game_over() == False and steps > 0:        
+            steps -= 1
+
+            x_t = extract_image(p.getScreenRGB(),(80,80))
+            
+            x_t = np.reshape(x_t, (1, 80, 80))
+
+            st = np.append(stack_x[1:4, :, :], x_t, axis=0)
+                        
+            if train:
+                r, action, hx, cx = train_and_play(flappy_bird_action, st,\
+                                                    select_action, perform_action,\
+                                                    possible_actions, optimize, \
+                                                    isTrain=True, x=hx,cx=cx)
+                reward += r
+
+            else:
+                _, _, hx, cx = play(flappy_bird_action, st, select_action,\
+                    perform_action, possible_actions, hx=hx,cx=cx, isTrain=False)
+            
+            stack_x = st
+
+        score = p.score()
+        p.reset_game()
+        reward -= 1
+        # save_model(save_path)
+        return score
+
+    return main
 
 def build_model():
     # The input of the first layer corresponds to

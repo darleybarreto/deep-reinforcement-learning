@@ -3,18 +3,11 @@ import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
 from torch.autograd import Variable
 from collections import namedtuple
 # from torchvision.utils import save_image
 
-opt =   {
-            "Adam": torch.optim.Adam,\
-            "RMSprop": torch.optim.RMSprop,\
-            "SGD": torch.optim.SGD 
-        }
-
-class DQN(nn.Module):
+class A3C(nn.Module):
     def __init__(self, actions, shape, fc):
         super(DQN, self).__init__()
 
@@ -120,101 +113,42 @@ class ReplayMemory(object):
     def __len__(self):
         return len(self.memory)
 
-def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSprop', **kwargs):
+def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSprop', **kwargs): 
+
+    # if path: dqn.load_state_dict(torch.load(path))
+
+    values = []
+    log_probs = []
+    entropies = []
 	
-    BATCH_SIZE  = kwargs.get("BATCH_SIZE",64)
-    GAMMA       = kwargs.get("GAMMA", 0.999)
-    EPS_START   = kwargs.get("EPS_START", 0.9)
-    EPS_END     = kwargs.get("EPS_END", 0.05)
-    EPS_DECAY   = kwargs.get("EPS_DECAY", 200)
-    path        = kwargs.get("path", None)
-    memory      = kwargs.get("memory", ReplayMemory(10000))
-    
-    dqn = DQN(actions, shape, fully_connected)
+    def select_action(state, hx, cx, isTrain=True):
 
-    if path: dqn.load_state_dict(torch.load(path))
-	
-    optimizer = opt[opt_](dqn.parameters(), lr=learning_rate)
-    steps_done = 0
-    last_sync = 0
+        value, logit, (hx, cx) = model((Variable(state.unsqueeze(0), volatile=True), (hx, cx)))
 
-    def select_greddy_action(state):
-        nonlocal steps_done
-
-        sample = random.random()
-
-        eps_threshold = EPS_END + (EPS_START - EPS_END) * \
-            math.exp(-1. * steps_done / EPS_DECAY)
-        steps_done += 1
-
-        if sample > eps_threshold:
-            state = torch.from_numpy(state).float().unsqueeze(0)
-            probs = dqn(Variable(state, volatile=True))
-            
-            return probs.data.max(1)[1].cpu() # get the index of the max log-probability
-
+        prob = F.softmax(logit)
+        
+        if not isTrain:
+            action = prob.max(1)[1].data.numpy()
+        
         else:
-            return torch.LongTensor([[random.randrange(actions)]])
+            log_prob = F.log_softmax(logit)
+            entropy = -(log_prob * prob).sum(1)
+            entropies.append(entropy)
+            action = prob.multinomial().data
+            log_prob = log_prob.gather(1, Variable(action))
+
+            values.append(value)
+            log_probs.append(log_prob)
+
+        return action, hx, cx # get the index of the max log-probability
+
 
     def perform_action(f_action, possible_actions, action):
         # reward
         return f_action(possible_actions[action])
 
     def optimize():
-        ### Perform experience replay and train the network.
-        nonlocal last_sync
-
-        if len(memory) < BATCH_SIZE:
-            return
-
-        transitions = memory.sample(BATCH_SIZE)
-        # Use the replay buffer to sample a batch of transitions
-        
-        batch = Transition(*zip(*transitions))
-
-        # batch.state is a tuple of states
-        # batch.action is a tuple os actions
-        # batch.reward is a tuple of rewards
-        
-        state_batch = Variable(torch.cat(batch.state)).float()
-        action_batch = Variable(torch.cat(batch.action)).long()
-        reward_batch = Variable(torch.cat(batch.reward)).float()
-        
-        non_final_mask = torch.ByteTensor(tuple(map(lambda s: s is not None, batch.next_state)))
-        
-        non_final_next_states = Variable(torch.cat([s for s in batch.next_state if s is not None]),volatile=True).float()
-        # print(type(non_final_next_states.data))
-        # Compute current Q value, takes only state and output value for every state-action pair
-        # We choose Q based on action taken.
-        # save_image(state_batch.data,"before_conv.png")
-        state_action_values = dqn(state_batch).gather(1, action_batch)
-        # Compute next Q value based on which action gives max Q values
-        next_state_values = Variable(torch.zeros(BATCH_SIZE))
-        next_state_values[non_final_mask] = dqn(non_final_next_states).max(1)[0]
-
-        next_state_values.volatile = False
-        # Compute the target of the current Q values
-        expected_state_action_values = (next_state_values * GAMMA) + reward_batch
-
-        # same as SmoothL1Loss
-        # Creates a criterion that uses a squared term if 
-        # the absolute element-wise error falls below 1 and an L1 term otherwise.
-        loss = F.smooth_l1_loss(state_action_values, expected_state_action_values)
-
-        # Clears the gradients of all optimized Variable
-        optimizer.zero_grad()
-
-        # Use autograd to compute the backward pass. This call will compute the
-        # gradient of loss with respect to all Variables with requires_grad=True.
-        # After this call w1.grad and w2.grad will be Variables holding the gradient
-        # of the loss with respect to w1 and w2 respectively.
-        loss.backward()
-
-        #Clamps the gradients to (-1,1) in-place 
-        for param in dqn.parameters():
-            param.grad.data.clamp_(-1, 1)
-            
-        optimizer.step()
+        pass
 
     def save_model(path):
         if path: torch.save(dqn.state_dict(),path)
@@ -222,5 +156,5 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
     def push_to_memory(*args):
         memory.push(*args)
 
-    return push_to_memory, select_greddy_action, perform_action, optimize, save_model
+    return push_to_memory, select_action, perform_action, optimize, save_model
 	

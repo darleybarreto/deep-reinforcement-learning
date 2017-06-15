@@ -1,6 +1,7 @@
 # from flappy_bird_pygame import flappybird
 from games import *
 from dqn import create_model
+from tqdm import trange
 import os
 import sys
 
@@ -54,17 +55,16 @@ if __name__ == '__main__':
 	load_dqn_path = None
 	# save_txt_path = None
 	txt = open(save_txt_path,"w")
-
-	episode = 0
+	show_display = False
 	episodes = 5000
 	shape, fully_connected, actions = model[1].build_model()
 
-	game_main = model[1].init_main(save_dqn_path, create_model(actions, shape, fully_connected, path=load_dqn_path))
+	game_main = model[1].init_main(save_dqn_path, create_model(actions, shape, fully_connected, path=load_dqn_path),display=show_display)
 	
-	while episode < episodes:
-		print("Beginning episode #%s"%episode)
+	# while episode < episodes:
+	for episode in trange(episodes,desc='Episodes'):
+		# print("Beginning episode #%s"%episode)
 		score = game_main()
-		episode += 1
 		txt.write(str(score) + " ")
 
 	txt.close()

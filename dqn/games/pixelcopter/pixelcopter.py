@@ -7,7 +7,7 @@ possible_actions = {0:None}
 
 possible_actions.update({i:a for i,a in enumerate([K_w, K_s], start=1)})
 
-def init_main(save_path, model, train=True):
+def init_main(save_path, model, train=True,display=False):
     """The application's entry point.
 
     If someone executes this module (instead of importing it, for
@@ -21,12 +21,11 @@ def init_main(save_path, model, train=True):
     frame_skip = 2
     num_steps = 1
     force_fps = False  # slower speed
-    display_screen = True
     
     game = Pixelcopter(width=256, height=256)
     
     p = PLE(game, fps=fps, frame_skip=frame_skip, num_steps=num_steps,
-        force_fps=force_fps, display_screen=display_screen)
+        force_fps=force_fps, display_screen=display)
 
     p.init()
 
@@ -49,7 +48,7 @@ def init_main(save_path, model, train=True):
             
             x_t = np.reshape(x_t, (1, 80, 80))
 
-            st = np.append(stack_x[:3, :, :], x_t, axis=0)
+            st = np.append(stack_x[1:4, :, :], x_t, axis=0)
 
             play(flappy_bird_action, st, select_action, perform_action, possible_actions)
                         

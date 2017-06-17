@@ -1,7 +1,9 @@
+import torch
 import numpy as np
 from ple import PLE
 from ..util import *
 from ple.games.pixelcopter import Pixelcopter, K_w, K_s
+from torch.autograd import Variable
 
 possible_actions = {0:None}
 
@@ -29,7 +31,7 @@ def init_main(save_path, model, steps, train=True,display=False):
 
     p.init()
 
-    def flappy_bird_action(action):
+    def p_action(action):
         # reward, action
         return p.act(action)
     
@@ -52,12 +54,12 @@ def init_main(save_path, model, steps, train=True,display=False):
             st = np.append(stack_x[1:4, :, :], x_t, axis=0)
                         
             if train:
-                r, action, _, _ = train_and_play(flappy_bird_action, st, select_action, perform_action, possible_actions, optimize)
+                r, action, _, _, _ = train_and_play(p_action, st, select_action, perform_action, possible_actions, optimize,None,{})
                 reward += r
                 push_to_memory(stack_x, action, st, reward)
             
             else:
-                play(flappy_bird_action, st, select_action, perform_action, possible_actions)
+                play(p_action, st, select_action, perform_action, possible_actions, None,{})
             
             stack_x = st
 
@@ -82,3 +84,22 @@ def build_model():
     fully_connected = [2304,512]
 
     return shape, fully_connected, len(possible_actions)
+
+
+def build_model_a3c():
+    # The input of the first layer corresponds to
+    # the number of most recent frames stacked together as describe in the paper
+    shape = [
+                [4, 32, 5, 1, 2],    # first layer
+                [32, 32, 5, 1, 1],    # second
+                [32, 64, 4, 1, 1],   # third layer
+                [64, 64, 3, 1, 1],   # fourth layer
+            ]
+
+    lstm = [1024, 512]
+    fully_connected = [512,1]
+
+    return shape, fully_connected, lstm, len(possible_actions)
+
+def opt_nothing():
+    pass

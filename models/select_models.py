@@ -1,6 +1,7 @@
 from . import dqn
 from . import a3c
 import os
+import sys
 
 models ={1:["Simple DQN", dqn.run],\
         2:["Asynchronous Actor Citic",a3c.run],\

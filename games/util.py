@@ -15,16 +15,15 @@ def extract_image(image_data, size):
     _, x_t = cv2.threshold(x_t,50,255,cv2.THRESH_BINARY)
     return x_t
 
-def play(f_action, state, select_action, perform_action, possible_actions, **kwargs):
+def play(f_action, state, select_action, perform_action, possible_actions, model, kwargs):
     hx = kwargs.get("hx", None)
     cx = kwargs.get("hx", None)
-    isTrain = kwargs.get("isTrain", False)
-
-    action, hx, cx = select_action(state, hx, cx, isTrain=isTrain)
+    isT = kwargs.get("isTrain", False)
+    action, hx, cx, info_dict = select_action(state, hx, cx, model, isT)
     reward = perform_action(f_action, possible_actions, action)
-    return reward, action, hx, cx
+    return reward, action, hx, cx, info_dict
 
-def train_and_play(f_action, state, select_action, perform_action, possible_actions, optimize, **kwargs):
-    reward, action, hx, cx = play(f_action, state, select_action, perform_action, possible_actions)
+def train_and_play(f_action, state, select_action, perform_action, possible_actions, optimize, model,kwargs):
+    reward, action, hx, cx, info_dict = play(f_action, state, select_action, perform_action, possible_actions,model,kwargs)
     optimize()
-    return reward, action, hx, cx
+    return reward, action, hx, cx, info_dict

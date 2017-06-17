@@ -138,7 +138,7 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
     steps_done = 0
     last_sync = 0
 
-    def select_greddy_action(state, hx, cx, isTrain=False):
+    def select_greddy_action(state, hx, cx, model, isTrain):
         nonlocal steps_done
 
         sample = random.random()
@@ -151,10 +151,10 @@ def create_model(actions, shape, fully_connected, learning_rate=1e-2, opt_='RMSp
             state = torch.from_numpy(state).float().unsqueeze(0)
             probs = dqn(Variable(state, volatile=True))
             
-            return probs.data.max(1)[1].cpu(), None, None # get the index of the max log-probability
+            return probs.data.max(1)[1].cpu(), None, None, None # get the index of the max log-probability
 
         else:
-            return torch.LongTensor([[random.randrange(actions)]]), None, None
+            return torch.LongTensor([[random.randrange(actions)]]), None, None, None
 
     def perform_action(f_action, possible_actions, action):
         # reward

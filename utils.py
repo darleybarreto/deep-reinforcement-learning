@@ -1,5 +1,6 @@
 from games import *
 import os
+import sys
 
 games ={1:["FlappyBird", flappybird],\
         2:["Pong",pong],\

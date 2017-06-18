@@ -1,4 +1,11 @@
 from models import select_models
 
-kwargs = {}
+kwargs = {
+			"load_path": False,\
+			"display": False,\
+			"episodes":1000,\
+			"steps": 10,\
+			"n_processes": 1
+		}
+
 select_models.select_models(**kwargs)

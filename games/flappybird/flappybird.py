@@ -80,7 +80,124 @@ def init_main(save_path, model, steps, train=True,display=False):
     return main
 
 
+def a3c_main(save_path, shared_model,\
+            model,\
+            steps,\
+            select_action,\
+            perform_action,\
+            save_model,\
+            optimizer=None,\
+            train=True,\
+            display=False):
 
+
+
+    reward_alive = 0
+
+    fps = 30  # fps we want to run at
+    frame_skip = 2
+    num_steps = 1
+    force_fps = False  # slower speed
+    
+    game = FlappyBird()
+    
+    p = PLE(game, fps=fps, frame_skip=frame_skip, num_steps=num_steps,
+        force_fps=force_fps, display_screen=display)
+
+    p.init()
+
+    def p_action(action):
+        # reward, action
+        return p.act(action)
+    
+    def main():
+        nonlocal steps
+
+        rewards = []
+        values = []
+        log_probs = []
+        rewards = []
+        entropies = []
+
+        reward = 0
+        x_t = extract_image(p.getScreenRGB(),(80,80))
+
+        stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
+        model.load_state_dict(shared_model.state_dict())
+
+        cx = Variable(torch.zeros(1, 256), volatile=True)
+        hx = Variable(torch.zeros(1, 256), volatile=True)
+
+        while p.game_over() == False and steps > 0:        
+            steps -= 1
+
+            x_t = extract_image(p.getScreenRGB(),(80,80))
+            
+            x_t = np.reshape(x_t, (1, 80, 80))
+
+            st = np.append(stack_x[1:4, :, :], x_t, axis=0)
+                        
+            if train:
+                r, action, hx, cx, info_dict = train_and_play(p_action, st,\
+                                                    select_action, perform_action,\
+                                                    possible_actions, opt_nothing, \
+                                                    model, {"isTrain":True, "hx":hx,"cx":cx})
+                rewards.append(r)
+                # reward += r
+
+                entropies.append(info_dict["entropies"])
+                values.append(info_dict["values"])
+                log_probs.append(info_dict["log_probs"])
+
+            else:
+                _, _, hx, cx, _ = play(p_action, st, select_action,\
+                    perform_action, possible_actions, model, {"hx":hx,"cx":cx, "isTrain":False})
+            
+            stack_x = st
+
+            # reward_alive += 0.1
+            # reward += reward_alive
+
+        if isTrain:
+            state = torch.from_numpy(stack_x)
+            R = torch.zeros(1, 1)
+            if steps > 0:
+                value, _, _ = model((Variable(state.unsqueeze(0)), (hx, cx)))
+
+            values.append(Variable(R))
+            policy_loss = 0
+            value_loss = 0
+            R = Variable(R)
+            gae = torch.zeros(1, 1)
+
+            for i in reversed(range(len(rewards))):
+                R = args.gamma * R + rewards[i]
+                advantage = R - values[i]
+                value_loss = value_loss + 0.5 * advantage.pow(2)
+
+                # Generalized Advantage Estimataion
+                delta_t = rewards[i] + args.gamma * \
+                    values[i + 1].data - values[i].data
+                gae = gae * args.gamma * args.tau + delta_t
+
+                policy_loss = policy_loss - \
+                    log_probs[i] * Variable(gae) - 0.01 * entropies
+
+            optimizer.zero_grad()
+
+            (policy_loss + 0.5 * value_loss).backward()
+            torch.nn.utils.clip_grad_norm(model.parameters(), 40)
+
+            ensure_shared_grads(model, shared_model)
+            optimizer.step()
+
+        score = p.score()
+        p.reset_game()
+        # reward -= 1
+        # save_model(save_path)
+        return score, rewards
+
+    return main
 
 
 def build_model():

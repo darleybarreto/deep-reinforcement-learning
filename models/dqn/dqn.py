@@ -55,9 +55,9 @@ class DQN(nn.Module):
     
     def forward(self, x):
         x = self.layer1(x)
+        # save_image(x.data[0, 2, :, :],"1_conv.png")
         x = self.layer2(x)
         x = self.layer3(x)
-        # save_image(x.data,"3_conv.png")
 
         # x.size(0) get the 0 component of its size
         # x.view() is basically to reshape the tensor

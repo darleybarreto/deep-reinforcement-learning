@@ -13,7 +13,12 @@ def train(rank, shared_model, optz, save_a3c, load_a3c, save_txt_path, game, kwa
 	show_display = kwargs.get("display", False)
 	steps = float(kwargs.get("step",1000))
 
-	txt = open(save_txt_path,kwargs.get("access_scores", "w"))
+	if load_a3c:
+		mode = "a"
+	else:
+		mode = "w"
+
+	# txt = open(save_txt_path, mode)
 
 	game_main = game.a3c_main(save_a3c,\
 								shared_model,\
@@ -27,22 +32,17 @@ def train(rank, shared_model, optz, save_a3c, load_a3c, save_txt_path, game, kwa
 								display=show_display)
 		
 	if episodes == float("inf"):
+		episode = 0
 		while True:
-			try:
-				print("Beginning episode #%s"%episode)
-				score, rewards = game_main()
-				txt.write(str(score) + " ")
-				
-			except:
-				txt.close()
+			print("Beginning episode #%s"%episode)
+			score, rewards = game_main()
+			# txt.write(str(score) + " ")
+			episode += 1
 
 	else:
-		try:
-			for episode in trange(int(episodes),desc='Episodes'):
-				# print("Beginning episode #%s"%episode)
-				score = game_main()
-				txt.write(str(score) + " ")
-		except:
-			txt.close()
+		for episode in trange(int(episodes),desc='Episodes'):
+			# print("Beginning episode #%s"%episode)
+			score = game_main()
+			# txt.write(str(score) + " ")
 		
 	

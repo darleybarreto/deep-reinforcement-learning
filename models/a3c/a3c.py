@@ -35,10 +35,10 @@ class A3C(nn.Module):
 
         in_, out_, kernel, stride, padding = (list(zip(*shape))[i] for i in range(len(shape) + 1))
         
-        self.layer1 = nn.Conv2d(in_[0], out_[0], kernel_size=kernel[0], stride=stride[0], padding=padding[0])
-        self.layer2 = nn.Conv2d(in_[1], out_[1], kernel_size=kernel[1], stride=stride[1], padding=padding[1])
-        self.layer3 = nn.Conv2d(in_[2], out_[2], kernel_size=kernel[2], stride=stride[2], padding=padding[2])
-        self.layer4 = nn.Conv2d(in_[3], out_[3], kernel_size=kernel[3], stride=stride[3], padding=padding[3])
+        self.conv1 = nn.Conv2d(in_[0], out_[0], kernel_size=kernel[0], stride=stride[0], padding=padding[0])
+        self.conv2 = nn.Conv2d(in_[1], out_[1], kernel_size=kernel[1], stride=stride[1], padding=padding[1])
+        self.conv3 = nn.Conv2d(in_[2], out_[2], kernel_size=kernel[2], stride=stride[2], padding=padding[2])
+        self.conv4 = nn.Conv2d(in_[3], out_[3], kernel_size=kernel[3], stride=stride[3], padding=padding[3])
 
         self.lstm = nn.LSTMCell(*lstm)
         self.critic_linear = nn.Linear(*fully)
@@ -59,14 +59,15 @@ class A3C(nn.Module):
     
     def forward(self, inputs):
         inputs, (hx, cx) = inputs
-        x = F.elu(self.layer1(inputs))
-        print(x.data.size())
-        x = F.elu(self.layer1(x))
-        x = F.elu(self.layer1(x))
-        x = F.elu(self.layer1(x))
+        # print("size >>> ", inputs.data.size())
+        x = F.relu(F.max_pool2d(self.conv1(inputs), kernel_size=2, stride=2))
+        x = F.relu(F.max_pool2d(self.conv2(x), kernel_size=2, stride=2))
+        x = F.relu(F.max_pool2d(self.conv3(x), kernel_size=2, stride=2))
+        x = F.relu(F.max_pool2d(self.conv4(x), kernel_size=2, stride=2))
 
-        x = x.view(-1, 32 * 3 * 3)
+        x = x.view(x.size(0), -1)
         hx, cx = self.lstm(x, (hx, cx))
+
         x = hx
 
         return self.critic_linear(x), self.actor_linear(x), (hx, cx)
@@ -78,7 +79,7 @@ def create_model(model_conf):
     def select_action(state, hx, cx, model, isTrain):
         info_dict = {}
         state = torch.from_numpy(state).float()
-        # print(state.type())
+        # print("size >>> ",state.size())
         value, logit, (hx, cx) = model((Variable(state.unsqueeze(0), volatile=True), (hx, cx)))
 
         prob = F.softmax(logit)

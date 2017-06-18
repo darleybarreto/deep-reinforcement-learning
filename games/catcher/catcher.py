@@ -114,7 +114,7 @@ def a3c_main(save_path, shared_model,\
         rewards = []
         entropies = []
 
-        reward = 0
+        # reward = 0
         x_t = extract_image(p.getScreenRGB(),(80,80))
 
         stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
@@ -138,7 +138,7 @@ def a3c_main(save_path, shared_model,\
                                                     possible_actions, opt_nothing, \
                                                     model, {"isTrain":True, "hx":hx,"cx":cx})
                 rewards.append(r)
-                reward += r
+                # reward += r
 
                 entropies.append(info_dict["entropies"])
                 values.append(info_dict["values"])
@@ -185,7 +185,7 @@ def a3c_main(save_path, shared_model,\
 
         score = p.score()
         p.reset_game()
-        reward -= 1
+        # reward -= 1
         # save_model(save_path)
         return score, rewards
 

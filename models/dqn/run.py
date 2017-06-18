@@ -13,8 +13,13 @@ def train_test(opt, model, save_dqn, load_dqn, save_txt_path, **kwargs):
 	episodes = float(kwargs.get("episodes",5000))
 	observations = float(kwargs.get("step",100))	
 	
+	if load_dqn:
+		mode = "a"
+	else:
+		mode = "w"
+
 	if opt == "train":
-		txt = open(save_txt_path,kwargs.get("access_scores", "w"))
+		txt = open(save_txt_path,kwargs.get("access_scores", mode))
 
 		show_display = kwargs.get("display", False)
 		game_main = model[1].init_main(save_dqn, dqn, observations,display=show_display)
@@ -51,8 +56,12 @@ def main(game, opt, **kwargs):
 
 	save_dqn_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'saved_files', save_dqn_path)
 	save_txt_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'saved_files', save_txt_path)
-	load_dqn_path = None
-	# save_txt_path = None
+	
+	if kwargs.get("load_path", False):
+		load_dqn_path = save_dqn_path
+	else:
+		load_dqn_path = None
+	
 	train_test(opt, game, save_dqn_path, load_dqn_path, save_txt_path, **kwargs)
 	# os.system("shutdown now -h")
 

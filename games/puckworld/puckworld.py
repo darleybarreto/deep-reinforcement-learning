@@ -117,10 +117,9 @@ def a3c_main(save_path, shared_model,\
         # reward, action
         return p.act(action)
     
-    def main():
+    def main(lstm_shape):
         nonlocal steps
 
-        rewards = []
         values = []
         log_probs = []
         rewards = []
@@ -132,8 +131,8 @@ def a3c_main(save_path, shared_model,\
         stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
         model.load_state_dict(shared_model.state_dict())
 
-        cx = Variable(torch.zeros(1, 256), volatile=True)
-        hx = Variable(torch.zeros(1, 256), volatile=True)
+        cx = Variable(torch.zeros(1, lstm_shape[-1]), volatile=True)
+        hx = Variable(torch.zeros(1, lstm_shape[-1]), volatile=True)
 
         while p.game_over() == False and steps > 0:        
             steps -= 1
@@ -162,7 +161,7 @@ def a3c_main(save_path, shared_model,\
             
             stack_x = st
 
-        if isTrain:
+        if train:
             state = torch.from_numpy(stack_x)
             R = torch.zeros(1, 1)
             if steps > 0:
@@ -198,8 +197,8 @@ def a3c_main(save_path, shared_model,\
         score = p.score()
         p.reset_game()
         # reward -= 1
-        # save_model(save_path)
-        return score, rewards
+        save_model(shared_model,save_path)
+        return score
 
     return main
 

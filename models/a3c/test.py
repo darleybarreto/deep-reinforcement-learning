@@ -4,7 +4,10 @@ from .shared_opt import SharedAdam
 
 def test(shared_model, save_a3c, load_a3c, save_txt_path, game, kwargs):
 
-	A3CModel = create_model(game.build_model_a3c())
+	shape, fully_connected_shape, lstm_shape, possible_actions_shape = game.build_model_a3c()
+
+	A3CModel = create_model((shape, fully_connected_shape, lstm_shape, possible_actions_shape))
+	
 	select_action, perform_action, a3cmodel,save_model = A3CModel
 
 	a3cmodel.eval()
@@ -15,10 +18,12 @@ def test(shared_model, save_a3c, load_a3c, save_txt_path, game, kwargs):
 
 	if load_a3c:
 		mode = "a"
+		shared_model.load_state_dict(torch.load(load_a3c))
+		
 	else:
 		mode = "w"
 
-	# txt = open(save_txt_path, mode)
+	txt = open(save_txt_path, mode)
 	
 	game_main = game.a3c_main(save_a3c,\
 								shared_model,\
@@ -35,6 +40,6 @@ def test(shared_model, save_a3c, load_a3c, save_txt_path, game, kwargs):
 	while episode < episodes:
 		episode += 1
 		print("Beginning episode #%s"%episode)
-		score = game_main()
-		# txt.write(str(score) + " ")
+		score = game_main(lstm_shape)
+		txt.write(str(score) + " ")
 		print("Ending episode with score:",score)

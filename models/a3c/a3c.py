@@ -102,7 +102,7 @@ def create_model(model_conf):
 
     def perform_action(f_action, possible_actions, action):
         # reward
-        return f_action(possible_actions[action])
+        return f_action(possible_actions[action[0][0]])
 
     def save_model(model, path):
         if path and model: torch.save(model.state_dict(),path)

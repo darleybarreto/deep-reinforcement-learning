@@ -1,6 +1,5 @@
 from games import *
 import os
-import sys
 
 games ={1:["FlappyBird", flappybird],\
         2:["Pong",pong],\
@@ -33,13 +32,16 @@ def menu():
         if not game:
             continue
 
-        if game[0] == "Quit":
+        if game[0] == "Go back":
             os.system('clear')
-            sys.exit()
-        
+            # sys.exit()
+            return None, None
         break
     os.system('clear')
-    
+
+    return sub_menu(game)
+
+def sub_menu(game):
     while True:
         os.system('clear')
         print("Select a mode:")
@@ -59,9 +61,10 @@ def menu():
         if not opt:
             continue
 
-        if opt == "Quit":
+        if opt == "Go back":
             os.system('clear')
-            sys.exit()
+            # sys.exit()
+            return None,None
         
         break
     os.system('clear')

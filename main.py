@@ -3,8 +3,8 @@ from models import select_models
 kwargs = {
 			"load_path": False,\
 			"display": False,\
-			"episodes":1000,\
-			"steps": 10,\
+			"episodes":10000,\
+			"steps": 1000,\
 			"n_processes": 1
 		}
 

@@ -36,7 +36,12 @@ def menu():
     return op
 
 def select_models(**kwargs):
-    model = models.get(menu())[1]
-    game, opt = model.menu()
+    
+    while True:
+        model = models.get(menu())[1]
+        game, opt = model.menu()
+        if game:
+            break
+    
     model.main(game, opt,**kwargs)
 

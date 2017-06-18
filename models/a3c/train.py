@@ -22,8 +22,6 @@ def train(rank, shared_model, optz, save_a3c, load_a3c, save_txt_path, game, kwa
 	else:
 		mode = "w"
 
-	txt = open(save_txt_path, mode)
-
 	game_main = game.a3c_main(save_a3c,\
 								shared_model,\
 								a3cmodel,\
@@ -32,21 +30,20 @@ def train(rank, shared_model, optz, save_a3c, load_a3c, save_txt_path, game, kwa
 								perform_action,\
 								save_model,\
 								optimizer=optz,\
-								train=False,\
+								train=True,\
 								display=show_display)
 		
 	if episodes == float("inf"):
 		episode = 0
 		while True:
-			print("Beginning episode #%s"%episode)
-			score, rewards = game_main(lstm_shape)
-			txt.write(str(score) + " ")
+			print("Non shared model >> Beginning episode #%s"%(episode))
+			score = game_main(lstm_shape)
+			print("Non shared model >> Ending episode with score:",score)
 			episode += 1
 
 	else:
-		for episode in trange(int(episodes),desc='Episodes'):
+		for episode in trange(int(episodes),desc='Non shared model >> Episodes'):
 			# print("Beginning episode #%s"%episode)
 			score = game_main(lstm_shape)
-			txt.write(str(score) + " ")
 		
 	

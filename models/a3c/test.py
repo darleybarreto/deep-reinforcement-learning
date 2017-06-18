@@ -39,7 +39,7 @@ def test(shared_model, save_a3c, load_a3c, save_txt_path, game, kwargs):
 
 	while episode < episodes:
 		episode += 1
-		print("Beginning episode #%s"%episode)
+		print("Shared model >> Beginning episode #%s"%episode)
 		score = game_main(lstm_shape)
 		txt.write(str(score) + " ")
-		print("Ending episode with score:",score)
+		print("Shared model >> Ending episode with score:",score)

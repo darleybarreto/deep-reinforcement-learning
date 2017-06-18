@@ -59,7 +59,6 @@ class A3C(nn.Module):
     
     def forward(self, inputs):
         inputs, (hx, cx) = inputs
-        # print("size >>> ", inputs.data.size())
         x = F.relu(F.max_pool2d(self.conv1(inputs), kernel_size=2, stride=2))
         x = F.relu(F.max_pool2d(self.conv2(x), kernel_size=2, stride=2))
         x = F.relu(F.max_pool2d(self.conv3(x), kernel_size=2, stride=2))
@@ -78,9 +77,9 @@ def create_model(model_conf):
     # if path: dqn.load_state_dict(torch.load(path))
     def select_action(state, hx, cx, model, isTrain):
         info_dict = {}
-        state = torch.from_numpy(state).float()
-        # print("size >>> ",state.size())
-        value, logit, (hx, cx) = model((Variable(state.unsqueeze(0), volatile=True), (hx, cx)))
+        state = torch.from_numpy(state).unsqueeze(0).float()
+        # print("TYPE >>> ",type(state))
+        value, logit, (hx, cx) = model((Variable(state), (hx, cx)))
 
         prob = F.softmax(logit)
         
@@ -89,13 +88,12 @@ def create_model(model_conf):
         
         else:
             info_dict["log_probs"] = F.log_softmax(logit)
-            entropy = -(log_prob * prob).sum(1)
+            entropy = -(info_dict["log_probs"] * prob).sum(1)
             info_dict["entropies"] = entropy
             action = prob.multinomial().data
-            log_prob = log_prob.gather(1, Variable(action))
+            info_dict["log_probs"] = info_dict["log_probs"].gather(1, Variable(action))
 
             info_dict["values"] = value
-            log_probs = log_prob
 
         return action, hx, cx, info_dict # get the index of the max log-probability
 

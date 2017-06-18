@@ -18,11 +18,6 @@ def ensure_shared_grads(model, shared_model):
         shared_param._grad = param.grad
 
 def init_main(save_path, model, steps, train=True, display=False):
-    """The application's entry point.
-
-    If someone executes this module (instead of importing it, for
-    example), this function is called.
-    """
     push_to_memory, select_action, perform_action, optimize, save_model = model
 
     fps = 30  # fps we want to run at
@@ -43,8 +38,6 @@ def init_main(save_path, model, steps, train=True, display=False):
     
     def main():
         nonlocal steps
-
-        reward = 0
         x_t = extract_image(p.getScreenRGB(),(80,80))
 
         stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
@@ -59,8 +52,7 @@ def init_main(save_path, model, steps, train=True, display=False):
             st = np.append(stack_x[1:4, :, :], x_t, axis=0)
                         
             if train:
-                r, action, _, _, _ = train_and_play(p_action, st, select_action, perform_action, possible_actions, optimize,None,{})
-                reward += r
+                reward, action, _, _, _ = train_and_play(p_action, st, select_action, perform_action, possible_actions, optimize,None,{})
                 push_to_memory(stack_x, action, st, reward)
             
             else:
@@ -70,12 +62,10 @@ def init_main(save_path, model, steps, train=True, display=False):
 
         score = p.score()
         p.reset_game()
-        reward -= 1
         save_model(save_path)
         return score
 
     return main
-
 
 def a3c_main(save_path, shared_model,\
             model,\
@@ -85,9 +75,9 @@ def a3c_main(save_path, shared_model,\
             save_model,\
             optimizer=None,\
             train=True,\
-            display=False):
-
-
+            display=False,\
+            gamma =.99,\
+            tau=1.):
 
     fps = 30  # fps we want to run at
     frame_skip = 2
@@ -107,20 +97,22 @@ def a3c_main(save_path, shared_model,\
     
     def main(lstm_shape):
         nonlocal steps
+        nonlocal gamma
+        nonlocal tau
 
+        reward_alive = 0
         values = []
         log_probs = []
         rewards = []
         entropies = []
 
-        # reward = 0
         x_t = extract_image(p.getScreenRGB(),(80,80))
 
         stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
         model.load_state_dict(shared_model.state_dict())
 
-        cx = Variable(torch.zeros(1, lstm_shape[-1]), volatile=True)
-        hx = Variable(torch.zeros(1, lstm_shape[-1]), volatile=True)
+        cx = Variable(torch.zeros(1, lstm_shape[-1]))
+        hx = Variable(torch.zeros(1, lstm_shape[-1]))
 
         while p.game_over() == False and steps > 0:        
             steps -= 1
@@ -132,11 +124,14 @@ def a3c_main(save_path, shared_model,\
             st = np.append(stack_x[1:4, :, :], x_t, axis=0)
                         
             if train:
-                r, action, hx, cx, info_dict = train_and_play(p_action, st,\
+                # print()
+                reward, action, hx, cx, info_dict = train_and_play(p_action, st,\
                                                     select_action, perform_action,\
                                                     possible_actions, opt_nothing, \
                                                     model, {"isTrain":True, "hx":hx,"cx":cx})
-                rewards.append(r)
+                reward_alive += 0.1
+                reward += reward_alive
+                rewards.append(reward)
                 # reward += r
 
                 entropies.append(info_dict["entropies"])
@@ -153,7 +148,7 @@ def a3c_main(save_path, shared_model,\
             state = torch.from_numpy(stack_x)
             R = torch.zeros(1, 1)
             if steps > 0:
-                value, _, _ = model((Variable(state.unsqueeze(0)), (hx, cx)))
+                value, _, _ = model((Variable(state.unsqueeze(0).float()), (hx, cx)))
 
             values.append(Variable(R))
             policy_loss = 0
@@ -162,17 +157,17 @@ def a3c_main(save_path, shared_model,\
             gae = torch.zeros(1, 1)
 
             for i in reversed(range(len(rewards))):
-                R = args.gamma * R + rewards[i]
+                R = gamma * R + rewards[i]
                 advantage = R - values[i]
                 value_loss = value_loss + 0.5 * advantage.pow(2)
 
                 # Generalized Advantage Estimataion
-                delta_t = rewards[i] + args.gamma * \
+                delta_t = rewards[i] + gamma * \
                     values[i + 1].data - values[i].data
-                gae = gae * args.gamma * args.tau + delta_t
+                gae = gae * gamma * tau + delta_t
 
                 policy_loss = policy_loss - \
-                    log_probs[i] * Variable(gae) - 0.01 * entropies
+                    log_probs[i] * Variable(gae) - 0.01 * entropies[i]
 
             optimizer.zero_grad()
 
@@ -184,7 +179,6 @@ def a3c_main(save_path, shared_model,\
 
         score = p.score()
         p.reset_game()
-        # reward -= 1
         save_model(shared_model,save_path)
         return score
 

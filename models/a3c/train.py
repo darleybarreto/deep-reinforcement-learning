@@ -1,6 +1,7 @@
 from .a3c import create_model
 from tqdm import trange
 from .shared_opt import SharedAdam
+import torch
 
 def train(rank, shared_model, optz, save_a3c, load_a3c, save_txt_path, game, kwargs):
 	

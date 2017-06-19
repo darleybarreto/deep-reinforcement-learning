@@ -4,7 +4,7 @@ kwargs = {
 			"load_path": False,\
 			"display": False,\
 			"episodes":10000,\
-			"steps": 1000,\
+			"steps": "inf",\
 			"n_processes": 1
 		}
 

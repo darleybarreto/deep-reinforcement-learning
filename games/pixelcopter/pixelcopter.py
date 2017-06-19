@@ -16,7 +16,7 @@ def ensure_shared_grads(model, shared_model):
             return
         shared_param._grad = param.grad
 
-def init_main(save_path, model, steps, train=True,display=False):
+def init_main(save_path, model, train=True,display=False):
     push_to_memory, select_action, perform_action, optimize, save_model = model
 
     fps = 30  # fps we want to run at
@@ -35,8 +35,7 @@ def init_main(save_path, model, steps, train=True,display=False):
         # reward, action
         return p.act(action)
     
-    def main():
-        nonlocal steps
+    def main(steps):
         reward_alive = 0
 
         x_t = extract_image(p.getScreenRGB(),(80,80))
@@ -79,8 +78,9 @@ def a3c_main(save_path, shared_model,\
             save_model,\
             optimizer=None,\
             train=True,\
-            display=False):
-
+            display=False,\
+            gamma =.99,\
+            tau=1.):
 
 
     fps = 30  # fps we want to run at
@@ -101,8 +101,6 @@ def a3c_main(save_path, shared_model,\
     
     def main(lstm_shape):
         nonlocal steps
-        nonlocal gamma
-        nonlocal tau
 
         reward_alive = 0
         values = []

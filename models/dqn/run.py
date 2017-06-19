@@ -7,11 +7,10 @@ sys.path.insert(0,'../..')
 from utils import menu
 
 def train_test(opt, model, save_dqn, load_dqn, save_txt_path, **kwargs):
-	
 	shape, fully_connected, actions = model[1].build_model()
 	dqn = create_model(actions, shape, fully_connected, path=load_dqn)
 	episodes = float(kwargs.get("episodes",5000))
-	observations = float(kwargs.get("step",100))	
+	observations = float(kwargs.get("steps",1000))	
 	
 	if load_dqn:
 		mode = "a"
@@ -22,18 +21,20 @@ def train_test(opt, model, save_dqn, load_dqn, save_txt_path, **kwargs):
 		txt = open(save_txt_path,kwargs.get("access_scores", mode))
 
 		show_display = kwargs.get("display", False)
-		game_main = model[1].init_main(save_dqn, dqn, observations,display=show_display)
+		game_main = model[1].init_main(save_dqn, dqn,display=show_display)
 
 		if episodes == float("inf"):
+			episode = 0
 			while True:
 				print("Beginning episode #%s"%episode)
-				score = game_main()
+				score = game_main(observations)
 				txt.write(str(score) + " ")
+				episode += 1
 
 		else:
 			for episode in trange(int(episodes),desc='Episodes'):
 				# print("Beginning episode #%s"%episode)
-				score = game_main()
+				score = game_main(observations)
 				txt.write(str(score) + " ")
 		
 		txt.close()

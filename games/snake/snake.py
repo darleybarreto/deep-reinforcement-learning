@@ -16,7 +16,7 @@ def ensure_shared_grads(model, shared_model):
             return
         shared_param._grad = param.grad
 
-def init_main(save_path, model, steps, train=True, display=False):
+def init_main(save_path, model, train=True, display=False):
     """The application's entry point.
 
     If someone executes this module (instead of importing it, for
@@ -40,8 +40,7 @@ def init_main(save_path, model, steps, train=True, display=False):
         # reward, action
         return p.act(action)
     
-    def main():
-        nonlocal steps
+    def main(steps):
         reward_alive = 0
 
         x_t = extract_image(p.getScreenRGB(),(80,80))
@@ -108,9 +107,7 @@ def a3c_main(save_path, shared_model,\
     
     def main(lstm_shape):
         nonlocal steps
-        nonlocal gamma
-        nonlocal tau
-
+        
         reward_alive = 0
         values = []
         log_probs = []

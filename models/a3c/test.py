@@ -1,6 +1,7 @@
 from .a3c import create_model
 from tqdm import trange
 from .shared_opt import SharedAdam
+import torch
 
 def test(shared_model, save_a3c, load_a3c, save_txt_path, game, kwargs):
 
@@ -24,7 +25,7 @@ def test(shared_model, save_a3c, load_a3c, save_txt_path, game, kwargs):
 		mode = "w"
 
 	txt = open(save_txt_path, mode)
-	
+	save_a3c = None
 	game_main = game.a3c_main(save_a3c,\
 								shared_model,\
 								a3cmodel,\

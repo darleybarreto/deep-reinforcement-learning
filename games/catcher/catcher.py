@@ -4,6 +4,7 @@ from ple import PLE
 from ..util import *
 from ple.games.catcher import Catcher, K_a, K_d
 from torch.autograd import Variable
+from copy import copy
 
 possible_actions = {0:None}
 
@@ -17,7 +18,7 @@ def ensure_shared_grads(model, shared_model):
             return
         shared_param._grad = param.grad
 
-def init_main(save_path, model, steps, train=True, display=False):
+def init_main(save_path, model, train=True, display=False):
     push_to_memory, select_action, perform_action, optimize, save_model = model
 
     fps = 30  # fps we want to run at
@@ -36,13 +37,12 @@ def init_main(save_path, model, steps, train=True, display=False):
         # reward, action
         return p.act(action)
     
-    def main():
-        nonlocal steps
+    def main(steps):
         x_t = extract_image(p.getScreenRGB(),(80,80))
 
         stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
 
-        while p.game_over() == False and steps > 0:        
+        while p.game_over() == False and steps > 0:
             steps -= 1
 
             x_t = extract_image(p.getScreenRGB(),(80,80))

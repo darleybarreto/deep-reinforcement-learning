@@ -29,7 +29,6 @@ def test(shared_model, save_a3c, load_a3c, save_txt_path, game, kwargs):
 	game_main = game.a3c_main(save_a3c,\
 								shared_model,\
 								a3cmodel,\
-								steps,\
 								select_action,\
 								perform_action,\
 								save_model,\
@@ -41,6 +40,6 @@ def test(shared_model, save_a3c, load_a3c, save_txt_path, game, kwargs):
 	while episode < episodes:
 		episode += 1
 		print("Shared model >> Beginning episode #%s"%episode)
-		score = game_main(lstm_shape)
+		score = game_main(lstm_shape, steps)
 		txt.write(str(score) + " ")
 		print("Shared model >> Ending episode with score:",score)

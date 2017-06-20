@@ -51,22 +51,28 @@ def init_main(save_path, model, train=True, display=False):
         stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
 
         while p.game_over() == False and steps > 0:         
-            steps -= 1        
+            try:
+                steps -= 1        
 
-            x_t = extract_image(p.getScreenRGB(),(80,80))
-            
-            x_t = np.reshape(x_t, (1, 80, 80))
+                x_t = extract_image(p.getScreenRGB(),(80,80))
+                
+                x_t = np.reshape(x_t, (1, 80, 80))
 
-            st = np.append(stack_x[1:4, :, :], x_t, axis=0)
-                        
-            if train:
-                reward, action, _, _, _ = train_and_play(p_action, st, select_action, perform_action, possible_actions, optimize,None,{})
-                push_to_memory(stack_x, action, st, reward)
-            
-            else:
-                play(p_action, st, select_action, perform_action, possible_actions, None,{})
-            
-            stack_x = st
+                st = np.append(stack_x[1:4, :, :], x_t, axis=0)
+                            
+                if train:
+                    reward, action, _, _, _ = train_and_play(p_action, st, select_action, perform_action, possible_actions, optimize,None,{})
+                    push_to_memory(stack_x, action, st, reward)
+                
+                else:
+                    play(p_action, st, select_action, perform_action, possible_actions, None,{})
+                
+                stack_x = st
+            except Exception as e:
+                print("Exception >>", e)
+                print("Saving model")
+                save_model(save_path)
+                break
 
         score = p.score()
         p.reset_game()
@@ -78,7 +84,6 @@ def init_main(save_path, model, train=True, display=False):
     
 def a3c_main(save_path, shared_model,\
             model,\
-            steps,\
             select_action,\
             perform_action,\
             save_model,\
@@ -108,8 +113,7 @@ def a3c_main(save_path, shared_model,\
         # reward, action
         return p.act(action)
     
-    def main(lstm_shape):
-        nonlocal steps
+    def main(lstm_shape steps):
 
         reward_alive = 0
         values = []
@@ -124,69 +128,74 @@ def a3c_main(save_path, shared_model,\
 
         cx = Variable(torch.zeros(1, lstm_shape[-1]))
         hx = Variable(torch.zeros(1, lstm_shape[-1]))
+        try:
+            while p.game_over() == False and steps > 0:        
+                steps -= 1
 
-        while p.game_over() == False and steps > 0:        
-            steps -= 1
+                x_t = extract_image(p.getScreenRGB(),(80,80))
+                
+                x_t = np.reshape(x_t, (1, 80, 80))
 
-            x_t = extract_image(p.getScreenRGB(),(80,80))
-            
-            x_t = np.reshape(x_t, (1, 80, 80))
+                st = np.append(stack_x[1:4, :, :], x_t, axis=0)
+                            
+                if train:
+                    # print()
+                    reward, action, hx, cx, info_dict = train_and_play(p_action, st,\
+                                                        select_action, perform_action,\
+                                                        possible_actions, opt_nothing, \
+                                                        model, {"isTrain":True, "hx":hx,"cx":cx})
+                    reward_alive += 0.1
+                    reward += reward_alive
+                    rewards.append(reward)
+                    # reward += r
 
-            st = np.append(stack_x[1:4, :, :], x_t, axis=0)
-                        
+                    entropies.append(info_dict["entropies"])
+                    values.append(info_dict["values"])
+                    log_probs.append(info_dict["log_probs"])
+
+                else:
+                    _, _, hx, cx, _ = play(p_action, st, select_action,\
+                        perform_action, possible_actions, model, {"hx":hx,"cx":cx, "isTrain":False})
+                
+                stack_x = st
+
             if train:
-                # print()
-                reward, action, hx, cx, info_dict = train_and_play(p_action, st,\
-                                                    select_action, perform_action,\
-                                                    possible_actions, opt_nothing, \
-                                                    model, {"isTrain":True, "hx":hx,"cx":cx})
-                reward_alive += 0.1
-                reward += reward_alive
-                rewards.append(reward)
-                # reward += r
+                state = torch.from_numpy(stack_x)
+                R = torch.zeros(1, 1)
+                if steps > 0:
+                    value, _, _ = model((Variable(state.unsqueeze(0).float()), (hx, cx)))
 
-                entropies.append(info_dict["entropies"])
-                values.append(info_dict["values"])
-                log_probs.append(info_dict["log_probs"])
+                values.append(Variable(R))
+                policy_loss = 0
+                value_loss = 0
+                R = Variable(R)
+                gae = torch.zeros(1, 1)
 
-            else:
-                _, _, hx, cx, _ = play(p_action, st, select_action,\
-                    perform_action, possible_actions, model, {"hx":hx,"cx":cx, "isTrain":False})
-            
-            stack_x = st
+                for i in reversed(range(len(rewards))):
+                    R = gamma * R + rewards[i]
+                    advantage = R - values[i]
+                    value_loss = value_loss + 0.5 * advantage.pow(2)
 
-        if train:
-            state = torch.from_numpy(stack_x)
-            R = torch.zeros(1, 1)
-            if steps > 0:
-                value, _, _ = model((Variable(state.unsqueeze(0).float()), (hx, cx)))
+                    # Generalized Advantage Estimataion
+                    delta_t = rewards[i] + gamma * \
+                        values[i + 1].data - values[i].data
+                    gae = gae * gamma * tau + delta_t
 
-            values.append(Variable(R))
-            policy_loss = 0
-            value_loss = 0
-            R = Variable(R)
-            gae = torch.zeros(1, 1)
+                    policy_loss = policy_loss - \
+                        log_probs[i] * Variable(gae) - 0.01 * entropies[i]
 
-            for i in reversed(range(len(rewards))):
-                R = gamma * R + rewards[i]
-                advantage = R - values[i]
-                value_loss = value_loss + 0.5 * advantage.pow(2)
+                optimizer.zero_grad()
 
-                # Generalized Advantage Estimataion
-                delta_t = rewards[i] + gamma * \
-                    values[i + 1].data - values[i].data
-                gae = gae * gamma * tau + delta_t
+                (policy_loss + 0.5 * value_loss).backward()
+                torch.nn.utils.clip_grad_norm(model.parameters(), 40)
 
-                policy_loss = policy_loss - \
-                    log_probs[i] * Variable(gae) - 0.01 * entropies[i]
+                ensure_shared_grads(model, shared_model)
+                optimizer.step()
 
-            optimizer.zero_grad()
-
-            (policy_loss + 0.5 * value_loss).backward()
-            torch.nn.utils.clip_grad_norm(model.parameters(), 40)
-
-            ensure_shared_grads(model, shared_model)
-            optimizer.step()
+        except Exception as e:
+            print("Exception >>", e)
+            print("Saving model")
+            save_model(save_path)
 
         score = p.score()
         p.reset_game()

@@ -26,7 +26,6 @@ def train(rank, shared_model, optz, save_a3c, load_a3c, save_txt_path, game, kwa
 	game_main = game.a3c_main(save_a3c,\
 								shared_model,\
 								a3cmodel,\
-								steps,\
 								select_action,\
 								perform_action,\
 								save_model,\
@@ -38,7 +37,7 @@ def train(rank, shared_model, optz, save_a3c, load_a3c, save_txt_path, game, kwa
 		episode = 0
 		while True:
 			print("Non shared model >> Beginning episode #%s"%(episode))
-			score = game_main(lstm_shape)
+			score = game_main(lstm_shape,steps)
 			print("Non shared model >> Ending episode with score:",score)
 			episode += 1
 

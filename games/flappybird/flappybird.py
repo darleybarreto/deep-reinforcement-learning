@@ -22,7 +22,7 @@ def init_main(save_path, model, train=True,display=False):
     frame_skip = 2
     num_steps = 1
     force_fps = False  # slower speed
-    
+
     game = FlappyBird()
     
     p = PLE(game, fps=fps, frame_skip=frame_skip, num_steps=num_steps,
@@ -67,11 +67,11 @@ def init_main(save_path, model, train=True,display=False):
                 print("Exception >>", e)
                 print("Saving model")
                 save_model(save_path)
-                break
+                raise Exception()
 
         score = p.score()
         p.reset_game()
-        save_model(save_path)
+        if train: save_model(save_path)
         return score
 
     return main
@@ -130,7 +130,6 @@ def a3c_main(save_path, shared_model,\
                 st = np.append(stack_x[1:4, :, :], x_t, axis=0)
                             
                 if train:
-                    # print()
                     reward, action, hx, cx, info_dict = train_and_play(p_action, st,\
                                                         select_action, perform_action,\
                                                         possible_actions, opt_nothing, \
@@ -190,7 +189,7 @@ def a3c_main(save_path, shared_model,\
 
         score = p.score()
         p.reset_game()
-        save_model(shared_model,save_path)
+        if train: save_model(shared_model,save_path)
         return score
 
     return main

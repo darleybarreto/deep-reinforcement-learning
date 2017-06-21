@@ -3,7 +3,7 @@ from tqdm import trange
 from .shared_opt import SharedAdam
 import torch
 
-def train(rank, shared_model, optz, save_a3c, load_a3c, save_txt_path, game, kwargs):
+def train(n_p, rank, shared_model, optz, save_a3c, load_a3c, save_txt_path, game, kwargs):
 	
 	shape, fully_connected_shape, lstm_shape, possible_actions_shape = game.build_model_a3c()
 
@@ -36,14 +36,14 @@ def train(rank, shared_model, optz, save_a3c, load_a3c, save_txt_path, game, kwa
 	if episodes == float("inf"):
 		episode = 0
 		while True:
-			print("Non shared model >> Beginning episode #%s"%(episode))
+			print("Non shared model %d>> Beginning episode #%s"%(n_p,episode))
 			score = game_main(lstm_shape,steps)
-			print("Non shared model >> Ending episode with score:",score)
+			print("Non shared model %d>> Ending episode with score:"%(n_p),score)
 			episode += 1
 
 	else:
 		for episode in trange(int(episodes),desc='Non shared model >> Episodes'):
 			# print("Beginning episode #%s"%episode)
-			score = game_main(lstm_shape)
+			score = game_main(lstm_shape, steps)
 		
 	

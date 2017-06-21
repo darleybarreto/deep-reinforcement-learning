@@ -30,6 +30,7 @@ def train_test(opt, model, save_dqn, load_dqn, save_txt_path, **kwargs):
 				score = game_main(observations)
 				txt.write(str(score) + " ")
 				episode += 1
+				print("Ending episode with score %d"%(score))
 
 		else:
 			for episode in trange(int(episodes),desc='Episodes'):
@@ -41,13 +42,13 @@ def train_test(opt, model, save_dqn, load_dqn, save_txt_path, **kwargs):
 
 	elif opt == "test":	
 		
-		game_main = model[1].init_main(save_dqn, dqn, observations,train=False,display=True)
+		game_main = model[1].init_main(save_dqn, dqn,train=False,display=True)
 		episode = 0 
 		
 		while episode < episodes:
 			episode += 1
 			print("Beginning episode #%s"%episode)
-			score = game_main()
+			score = game_main(observations)
 			print("Ending episode with score:",score)
 
 

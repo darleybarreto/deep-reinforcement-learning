@@ -4,7 +4,6 @@ from ple import PLE
 from ..util import *
 from ple.games.catcher import Catcher, K_a, K_d
 from torch.autograd import Variable
-from copy import copy
 
 possible_actions = {0:None}
 
@@ -69,7 +68,7 @@ def init_main(save_path, model, train=True, display=False):
 
         score = p.score()
         p.reset_game()
-        save_model(save_path)
+        if train: save_model(save_path)
         return score
 
     return main
@@ -185,7 +184,7 @@ def a3c_main(save_path, shared_model,\
 
         score = p.score()
         p.reset_game()
-        save_model(shared_model,save_path)
+        if train: save_model(shared_model,save_path)
         return score
 
     return main

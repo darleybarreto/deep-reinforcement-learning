@@ -38,11 +38,11 @@ def main(model, opt, **kwargs):
 	p.start()
 	processes.append(p)
 
-	for rank in range(0, num_processes):
-		p = mp.Process(target=train, args=(rank, shared_model, optimizer,\
+	for n_p, rank in enumerate(range(0, num_processes)):
+		p = mp.Process(target=train, args=(n_p,rank, shared_model, optimizer,\
 						save_a3c, load_a3c, save_txt_path, model[1], kwargs))
-	p.start()
-	processes.append(p)
+		p.start()
+		processes.append(p)
 
 	for p in processes:
 		p.join()

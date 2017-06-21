@@ -78,7 +78,7 @@ def init_main(save_path, model, train=True, display=False):
 
         score = p.score()
         p.reset_game()
-        save_model(save_path)
+        if train: save_model(save_path)
         return score
 
     return main
@@ -198,7 +198,7 @@ def a3c_main(save_path, shared_model,\
 
         score = p.score()
         p.reset_game()
-        save_model(shared_model,save_path)
+        if train: save_model(shared_model,save_path)
         return score
 
     return main

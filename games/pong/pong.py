@@ -187,10 +187,10 @@ def a3c_main(save_path, shared_model,\
                 ensure_shared_grads(model, shared_model)
                 optimizer.step()
             
-            except Exception as e:
-                print("Exception >>", e)
-                print("Saving model")
-                save_model(save_path)
+        except Exception as e:
+            print("Exception >>", e)
+            print("Saving model")
+            save_model(save_path)
 
         score = p.score()
         p.reset_game()

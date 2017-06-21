@@ -4,7 +4,7 @@ import os
 import sys
 
 models ={1:["Simple DQN", dqn.run],\
-        2:["Asynchronous Advanced Actor Citic",a3c.run],\
+        2:["Asynchronous Advantage Actor Citic",a3c.run],\
         3:["Quit"]}
 
 def menu():

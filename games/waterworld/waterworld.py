@@ -113,7 +113,7 @@ def a3c_main(save_path, shared_model,\
         # reward, action
         return p.act(action)
     
-    def main(lstm_shape steps):
+    def main(lstm_shape,steps):
 
         reward_alive = 0
         values = []

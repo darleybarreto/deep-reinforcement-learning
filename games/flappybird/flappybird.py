@@ -35,10 +35,13 @@ def init_main(save_path, model, train=True,display=False):
         return p.act(action)
     
     def main(steps):
+
+        frames_steps = 40
         reward_alive = 0
 
         x_t = extract_image(p.getScreenRGB(),(80,80))
 
+        steps = steps * frames_steps
         stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
 
         while p.game_over() == False and steps > 0:         
@@ -50,7 +53,8 @@ def init_main(save_path, model, train=True,display=False):
                 x_t = np.reshape(x_t, (1, 80, 80))
 
                 st = np.append(stack_x[1:4, :, :], x_t, axis=0)
-                            
+
+                print(stack_x)
                 if train:
                     reward, action, _, _, _ = train_and_play(p_action, st, select_action, perform_action, possible_actions, optimize,None,{})
                     

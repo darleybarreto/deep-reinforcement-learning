@@ -42,6 +42,7 @@ def init_main(save_path, model, train=True,display=False):
         x_t = extract_image(p.getScreenRGB(),(80,80))
 
         steps = steps * frames_steps
+
         stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
 
         while p.game_over() == False and steps > 0:         
@@ -54,7 +55,6 @@ def init_main(save_path, model, train=True,display=False):
 
                 st = np.append(stack_x[1:4, :, :], x_t, axis=0)
 
-                print(stack_x)
                 if train:
                     reward, action, _, _, _ = train_and_play(p_action, st, select_action, perform_action, possible_actions, optimize,None,{})
                     
@@ -67,11 +67,16 @@ def init_main(save_path, model, train=True,display=False):
                     play(p_action, st, select_action, perform_action, possible_actions, None,{})
                 
                 stack_x = st
+
             except Exception as e:
                 print("Exception >>", e)
                 print("Saving model")
                 save_model(save_path)
-                raise Exception()
+                raise Exception
+
+
+        with open("stackFrames.txt","wb") as f:
+            np.savetxt(f,np.column_stack(stack_x),fmt='%1.10f')
 
         score = p.score()
         p.reset_game()
@@ -114,6 +119,8 @@ def a3c_main(save_path, shared_model,\
         log_probs = []
         rewards = []
         entropies = []
+        frames_step = 40
+        steps =  steps * frames_step
 
         x_t = extract_image(p.getScreenRGB(),(80,80))
 
@@ -152,7 +159,7 @@ def a3c_main(save_path, shared_model,\
                         perform_action, possible_actions, model, {"hx":hx,"cx":cx, "isTrain":False})
                 
                 stack_x = st
-
+            np.save("stack.txt",stack_x)
             if train:
                 state = torch.from_numpy(stack_x)
                 R = torch.zeros(1, 1)

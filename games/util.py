@@ -12,7 +12,7 @@ def extract_image(image_data, size):
 
     # The threshold function applies fixed-level thresholding to a single-channel array
     # threshold(array,threshold,maximum value,thresholding type)
-    _, x_t = cv2.threshold(x_t,50,255,cv2.THRESH_BINARY)
+    _, x_t = cv2.threshold(x_t,100,255,cv2.THRESH_BINARY)
     return x_t
 
 def play(f_action, state, select_action, perform_action, possible_actions, model, kwargs):

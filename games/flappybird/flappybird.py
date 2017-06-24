@@ -19,14 +19,20 @@ def init_main(save_path, model, train=True,display=False):
     push_to_memory, select_action, perform_action, optimize, save_model = model
 
     fps = 30  # fps we want to run at
-    frame_skip = 2
+    frame_skip = 5
     num_steps = 1
     force_fps = False  # slower speed
-
+    rewards = {
+        "positive": 1.0,
+        "negative": -1.0,
+        "tick": .1,
+        "loss": -10.0,
+        "win": 5.0
+    }
     game = FlappyBird()
     
     p = PLE(game, fps=fps, frame_skip=frame_skip, num_steps=num_steps,
-        force_fps=force_fps, display_screen=display)
+        force_fps=force_fps, display_screen=display, reward_values=rewards)
 
     p.init()
 
@@ -35,13 +41,7 @@ def init_main(save_path, model, train=True,display=False):
         return p.act(action)
     
     def main(steps):
-
-        frames_steps = 40
-        reward_alive = 0
-
         x_t = extract_image(p.getScreenRGB(),(80,80))
-
-        steps = steps * frames_steps
 
         stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
 
@@ -56,11 +56,7 @@ def init_main(save_path, model, train=True,display=False):
                 st = np.append(stack_x[1:4, :, :], x_t, axis=0)
 
                 if train:
-                    reward, action, _, _, _ = train_and_play(p_action, st, select_action, perform_action, possible_actions, optimize,None,{})
-                    
-                    reward_alive += 0.1
-                    reward += reward_alive
-                    
+                    reward, action, _, _, _ = train_and_play(p_action, st, select_action, perform_action, possible_actions, optimize,None,{})       
                     push_to_memory(stack_x, action, st, reward)
                 
                 else:
@@ -73,10 +69,6 @@ def init_main(save_path, model, train=True,display=False):
                 print("Saving model")
                 save_model(save_path)
                 raise Exception
-
-
-        with open("stackFrames.txt","wb") as f:
-            np.savetxt(f,np.column_stack(stack_x),fmt='%1.10f')
 
         score = p.score()
         p.reset_game()
@@ -97,15 +89,17 @@ def a3c_main(save_path, shared_model,\
             gamma =.99,\
             tau=1.):
 
-    fps = 30  # fps we want to run at
-    frame_skip = 2
-    num_steps = 1
-    force_fps = False  # slower speed
-    
+    rewards = {
+        "positive": 1.0,
+        "negative": -1.0,
+        "tick": .1,
+        "loss": -10.0,
+        "win": 5.0
+    }
     game = FlappyBird()
     
     p = PLE(game, fps=fps, frame_skip=frame_skip, num_steps=num_steps,
-        force_fps=force_fps, display_screen=display)
+        force_fps=force_fps, display_screen=display, reward_values=rewards)
 
     p.init()
 
@@ -114,13 +108,11 @@ def a3c_main(save_path, shared_model,\
         return p.act(action)
     
     def main(lstm_shape, steps):      
-        reward_alive = 0
         values = []
         log_probs = []
         rewards = []
         entropies = []
         frames_step = 40
-        steps =  steps * frames_step
 
         x_t = extract_image(p.getScreenRGB(),(80,80))
 
@@ -145,8 +137,6 @@ def a3c_main(save_path, shared_model,\
                                                         select_action, perform_action,\
                                                         possible_actions, opt_nothing, \
                                                         model, {"isTrain":True, "hx":hx,"cx":cx})
-                    reward_alive += 0.1
-                    reward += reward_alive
                     rewards.append(reward)
                     # reward += r
 
@@ -159,7 +149,7 @@ def a3c_main(save_path, shared_model,\
                         perform_action, possible_actions, model, {"hx":hx,"cx":cx, "isTrain":False})
                 
                 stack_x = st
-            np.save("stack.txt",stack_x)
+            
             if train:
                 state = torch.from_numpy(stack_x)
                 R = torch.zeros(1, 1)

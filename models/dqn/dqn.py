@@ -37,17 +37,17 @@ class DQN(nn.Module):
         
         self.layer1 = nn.Sequential(
             nn.Conv2d(in_[0], out_[0], kernel_size=kernel[0], stride=stride[0]), 
-            # nn.BatchNorm2d(out_[0]),
+            nn.BatchNorm2d(out_[0]),
             nn.ReLU())
 
         self.layer2 = nn.Sequential(
             nn.Conv2d(in_[1], out_[1], kernel_size=kernel[1], stride=stride[1]), 
-            # nn.BatchNorm2d(out_[1]),
+            nn.BatchNorm2d(out_[1]),
             nn.ReLU())
 
         self.layer3 = nn.Sequential(
             nn.Conv2d(in_[2], out_[2], kernel_size=kernel[2], stride=stride[2]), 
-            # nn.BatchNorm2d(out_[2]),
+            nn.BatchNorm2d(out_[2]),
             nn.ReLU())
 
         self.fc1 = nn.Linear(fc[0], fc[1])
@@ -61,6 +61,7 @@ class DQN(nn.Module):
         # save_image(x.data[0, 0, :, :], "conv2.png")
         x = self.layer3(x)
         # save_image(x.data[0, 0, :, :], "conv3.png")
+
         # x.size(0) get the 0 component of its size
         # x.view() is basically to reshape the tensor
         # the -1 means that for a given number of rows

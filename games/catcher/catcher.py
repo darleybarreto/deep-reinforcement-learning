@@ -55,7 +55,7 @@ def init_main(save_path, model, train=True, display=False):
             except Exception as e:
                 print("Exception >>", e)
                 print("Saving model")
-                save_model(save_path)
+                if train: save_model(save_path)
                 break
 
         score = p.score()
@@ -172,7 +172,7 @@ def a3c_main(save_path, shared_model,\
         except Exception as e:
             print("Exception >>", e)
             print("Saving model")
-            save_model(save_path)
+            if train: save_model(shared_model,save_path)
 
         score = p.score()
         p.reset_game()

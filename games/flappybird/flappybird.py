@@ -1,3 +1,4 @@
+import sys
 import torch
 import numpy as np
 from ple import PLE
@@ -10,7 +11,7 @@ possible_actions = {0: K_w, 1: None}
 def init_main(save_path, model, train=True,display=False):
 
     push_to_memory, select_action, perform_action, optimize, save_model = model
-
+    tresh = True
     fps = 30  # fps we want to run at
     frame_skip = 5
     num_steps = 1
@@ -34,15 +35,15 @@ def init_main(save_path, model, train=True,display=False):
         return p.act(action)
     
     def main(steps):
-        x_t = extract_image(p.getScreenRGB(),(80,80))
+        x_t = extract_image(p.getScreenRGB(),(80,80),tresh=tresh)
 
         stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
-
-        while p.game_over() == False and steps > 0:         
-            try:
+        try:
+            while p.game_over() == False and steps > 0:         
+            
                 steps -= 1
 
-                x_t = extract_image(p.getScreenRGB(),(80,80),tresh=False)
+                x_t = extract_image(p.getScreenRGB(),(80,80),tresh=tresh)
                 
                 x_t = np.reshape(x_t, (1, 80, 80))
 
@@ -57,11 +58,11 @@ def init_main(save_path, model, train=True,display=False):
                 
                 stack_x = st
 
-            except Exception as e:
-                print("Exception >>", e)
-                print("Saving model")
-                save_model(save_path)
-                raise Exception
+        except KeyboardInterrupt as e:
+            print("KeyboardInterrupt >>", e)
+            print("Saving model")
+            if train: save_model(save_path); print("Model saved")
+            sys.exit()
 
         score = p.score()
         p.reset_game()
@@ -81,7 +82,7 @@ def a3c_main(save_path, shared_model,\
             display=False,\
             gamma =.99,\
             tau=1.):
-    
+    tresh = False
     fps = 30  # fps we want to run at
     frame_skip = 5
     num_steps = 1
@@ -111,7 +112,7 @@ def a3c_main(save_path, shared_model,\
         entropies = []
         frames_step = 40
 
-        x_t = extract_image(p.getScreenRGB(),(80,80),tresh=False)
+        x_t = extract_image(p.getScreenRGB(),(80,80),tresh=tresh)
 
         stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
         model.load_state_dict(shared_model.state_dict())
@@ -123,7 +124,7 @@ def a3c_main(save_path, shared_model,\
             while p.game_over() == False and steps > 0:        
                 steps -= 1
 
-                x_t = extract_image(p.getScreenRGB(),(80,80))
+                x_t = extract_image(p.getScreenRGB(),(80,80),tresh=tresh)
                 
                 x_t = np.reshape(x_t, (1, 80, 80))
 
@@ -179,11 +180,12 @@ def a3c_main(save_path, shared_model,\
 
                 ensure_shared_grads(model, shared_model)
                 optimizer.step()
-        
-        except Exception as e:
-            print("Exception >>", e)
+
+        except KeyboardInterrupt as e:
+            print("KeyboardInterrupt >>", e)
             print("Saving model")
-            save_model(save_path)
+            if train: save_model(shared_model,save_path);print("Model saved")
+            sys.exit()
 
         score = p.score()
         p.reset_game()

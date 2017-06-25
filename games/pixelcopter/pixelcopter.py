@@ -34,9 +34,8 @@ def init_main(save_path, model, train=True,display=False):
         x_t = extract_image(p.getScreenRGB(),(80,80))
 
         stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
-
-        while p.game_over() == False and steps > 0:         
-            try:
+        try:
+            while p.game_over() == False and steps > 0:         
                 steps -= 1        
 
                 x_t = extract_image(p.getScreenRGB(),(80,80))
@@ -57,11 +56,11 @@ def init_main(save_path, model, train=True,display=False):
                 
                 stack_x = st
             
-            except Exception as e:
-                print("Exception >>", e)
-                print("Saving model")
-                save_model(save_path)
-                break
+        except KeyboardInterrupt as e:
+            print("KeyboardInterrupt >>", e)
+            print("Saving model")
+            if train: save_model(save_path); print("Model saved")
+            sys.exit()
 
         score = p.score()
         p.reset_game()
@@ -178,10 +177,11 @@ def a3c_main(save_path, shared_model,\
                 ensure_shared_grads(model, shared_model)
                 optimizer.step()
         
-        except Exception as e:
-            print("Exception >>", e)
+        except KeyboardInterrupt as e:
+            print("KeyboardInterrupt >>", e)
             print("Saving model")
-            save_model(save_path)
+            if train: save_model(shared_model,save_path);print("Model saved")
+            sys.exit()
 
         score = p.score()
         p.reset_game()

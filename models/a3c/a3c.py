@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+# from torchvision.utils import save_image
 
 def normalized_columns_initializer(weights, std=1.0):
     out = torch.randn(weights.size())
@@ -58,10 +59,15 @@ class A3C(nn.Module):
     
     def forward(self, inputs):
         inputs, (hx, cx) = inputs
+        # save_image(inputs.data[0, 0, :, :], "before_conv.png")
         x = F.relu(F.max_pool2d(self.conv1(inputs), kernel_size=2, stride=2))
+        # save_image(x.data[0, 0, :, :], "conv1.png")
         x = F.relu(F.max_pool2d(self.conv2(x), kernel_size=2, stride=2))
+        # save_image(x.data[0, 0, :, :], "conv2.png")
         x = F.relu(F.max_pool2d(self.conv3(x), kernel_size=2, stride=2))
+        # save_image(x.data[0, 0, :, :], "conv3.png")
         x = F.relu(F.max_pool2d(self.conv4(x), kernel_size=2, stride=2))
+        # save_image(x.data[0, 0, :, :], "conv4.png")
         x = x.view(x.size(0), -1)
         hx, cx = self.lstm(x, (hx, cx))
 

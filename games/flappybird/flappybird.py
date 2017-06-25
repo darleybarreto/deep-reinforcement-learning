@@ -7,13 +7,6 @@ from torch.autograd import Variable
 
 possible_actions = {0: K_w, 1: None}
 
-def ensure_shared_grads(model, shared_model):
-    for param, shared_param in zip(model.parameters(),
-                                   shared_model.parameters()):
-        if shared_param.grad is not None:
-            return
-        shared_param._grad = param.grad
-
 def init_main(save_path, model, train=True,display=False):
 
     push_to_memory, select_action, perform_action, optimize, save_model = model
@@ -49,12 +42,12 @@ def init_main(save_path, model, train=True,display=False):
             try:
                 steps -= 1
 
-                x_t = extract_image(p.getScreenRGB(),(80,80))
+                x_t = extract_image(p.getScreenRGB(),(80,80),tresh=False)
                 
                 x_t = np.reshape(x_t, (1, 80, 80))
 
                 st = np.append(stack_x[1:4, :, :], x_t, axis=0)
-
+                
                 if train:
                     reward, action, _, _, _ = train_and_play(p_action, st, select_action, perform_action, possible_actions, optimize,None,{})       
                     push_to_memory(stack_x, action, st, reward)
@@ -88,7 +81,11 @@ def a3c_main(save_path, shared_model,\
             display=False,\
             gamma =.99,\
             tau=1.):
-
+    
+    fps = 30  # fps we want to run at
+    frame_skip = 5
+    num_steps = 1
+    force_fps = False  # slower speed
     rewards = {
         "positive": 1.0,
         "negative": -1.0,
@@ -114,7 +111,7 @@ def a3c_main(save_path, shared_model,\
         entropies = []
         frames_step = 40
 
-        x_t = extract_image(p.getScreenRGB(),(80,80))
+        x_t = extract_image(p.getScreenRGB(),(80,80),tresh=False)
 
         stack_x = np.stack((x_t, x_t, x_t, x_t), axis=0)
         model.load_state_dict(shared_model.state_dict())

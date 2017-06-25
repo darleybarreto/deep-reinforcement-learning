@@ -4,11 +4,10 @@ import os
 games ={1:["FlappyBird", flappybird],\
         2:["Pong",pong],\
         3:["Catcher",catcher],\
-        4:["WaterWorld",waterworld],\
-        5:["Snake",snake],\
-        6:["PuckWorld",puckworld],\
-        7:["Pixelcopter",pixelcopter],\
-        8:["Quit"]}
+        4:["Snake",snake],\
+        5:["PuckWorld",puckworld],\
+        6:["Pixelcopter",pixelcopter],\
+        7:["Quit"]}
 
 mode = {1: "Train", 2: "Test", 3:"Quit"} 
 

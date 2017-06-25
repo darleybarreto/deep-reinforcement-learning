@@ -2,7 +2,7 @@ from models import select_models
 
 kwargs = {
 			"load_path": False,\
-			"display": True,\
+			"display": False,\
 			"episodes":5000,\
 			"steps": 2000,\
 			"n_processes": 1

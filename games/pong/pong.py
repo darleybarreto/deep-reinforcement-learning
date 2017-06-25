@@ -9,14 +9,6 @@ possible_actions = {0:None}
 
 possible_actions.update({i:a for i,a in enumerate([K_w, K_s], start=1)})
 
-
-def ensure_shared_grads(model, shared_model):
-    for param, shared_param in zip(model.parameters(),
-                                   shared_model.parameters()):
-        if shared_param.grad is not None:
-            return
-        shared_param._grad = param.grad
-
 def init_main(save_path, model, train=True,display=False):
     """The application's entry point.
 
@@ -57,7 +49,7 @@ def init_main(save_path, model, train=True,display=False):
                 x_t = np.reshape(x_t, (1, 80, 80))
 
                 st = np.append(stack_x[1:4, :, :], x_t, axis=0)
-                            
+
                 if train:
                     reward, action, _, _, _ = train_and_play(p_action, st, select_action, perform_action, possible_actions, optimize,None,{})
                     push_to_memory(stack_x, action, st, reward)
